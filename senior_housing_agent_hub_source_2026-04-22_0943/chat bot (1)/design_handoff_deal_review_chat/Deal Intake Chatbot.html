@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bloomfield Agent Hub — Deal Intake Bot</title>
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f6fa;
+    --card: #ffffff;
+    --card-soft: #f8fafc;
+    --ink: #111827;
+    --muted: #627083;
+    --line: #dbe3ee;
+    --blue: #086aa6;
+    --blue-dark: #07547f;
+    --blue-soft: #eef4fa;
+    --green: #087f5b;
+    --amber: #b45309;
+    --red: #b42318;
+    --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.18);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at top left, rgba(8, 106, 166, 0.12), transparent 34rem),
+      var(--bg);
+    color: var(--ink);
+    font-family: Satoshi, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
+    min-height: 100vh;
+  }
+
+  button, input, select, textarea { font: inherit; }
+
+  .shell {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 28px 0 120px;
+  }
+
+  .topbar, .panel, .agent-card {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--shadow);
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 22px;
+    border-radius: var(--radius);
+  }
+
+  .brand { display: flex; gap: 12px; align-items: center; color: var(--blue); font-weight: 700; }
+  .mark { width: 34px; height: 34px; }
+
+  h1, h2, h3, p { margin: 0; }
+  h1 {
+    margin-top: 14px;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+  .lede { margin-top: 12px; color: var(--muted); max-width: 760px; line-height: 1.6; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card-soft);
+    color: var(--muted);
+    font-size: 12px; font-weight: 700;
+    padding: 8px 10px; white-space: nowrap;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--green); }
+
+  .section-head {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;
+    margin: 32px 0 14px;
+  }
+  .section-head h2 { font-size: 18px; }
+  .section-head p { margin-top: 4px; color: var(--muted); font-size: 14px; }
+
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+    gap: 16px;
+  }
+
+  .agent-card {
+    display: flex; flex-direction: column; gap: 18px;
+    min-height: 230px; padding: 18px; border-radius: var(--radius);
+    position: relative;
+  }
+
+  .agent-card.new::after {
+    content: "NEW";
+    position: absolute; top: 14px; right: 14px;
+    background: var(--blue); color: #fff;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 3px 7px; border-radius: 6px;
+  }
+
+  .agent-icon {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border-radius: 14px;
+    background: rgba(8, 106, 166, 0.09);
+    color: var(--blue);
+    font-size: 22px;
+  }
+  .agent-card h3 { font-size: 18px; }
+  .agent-card p { color: var(--muted); line-height: 1.55; font-size: 14px; }
+  .agent-actions { display: flex; gap: 10px; margin-top: auto; flex-wrap: wrap; align-items: center; }
+
+  .button {
+    border: 0; border-radius: 12px;
+    padding: 11px 14px;
+    background: var(--blue); color: #fff;
+    font-weight: 700; cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .button:hover { background: var(--blue-dark); }
+  .button.secondary { background: var(--blue-soft); color: var(--blue); border: 1px solid #d6e5f1; }
+  .button.secondary:hover { background: #e3eef7; }
+  .button.ghost { background: transparent; color: var(--muted); padding: 6px 8px; }
+  .button.ghost:hover { color: var(--ink); background: #f1f5f9; }
+
+  .small-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card-soft);
+    color: var(--muted);
+    font-size: 11px; font-weight: 700;
+    padding: 5px 9px;
+  }
+
+  /* ------------- Chat bubble + panel ------------- */
+  .chat-launcher {
+    position: fixed; bottom: 24px; right: 24px;
+    z-index: 50;
+  }
+  .chat-bubble {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    display: grid; place-items: center;
+    border: 0; cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: transform .18s ease, background .18s ease;
+    position: relative;
+  }
+  .chat-bubble:hover { background: var(--blue-dark); transform: translateY(-2px); }
+  .chat-bubble svg { width: 26px; height: 26px; }
+  .chat-bubble .notify {
+    position: absolute; top: 6px; right: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+  }
+  .chat-bubble-label {
+    position: absolute; right: 72px; top: 50%; transform: translateY(-50%);
+    background: #111827; color: #fff;
+    font-size: 12px; font-weight: 600;
+    padding: 7px 10px; border-radius: 8px;
+    white-space: nowrap;
+    box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .chat-bubble-label::after {
+    content: ""; position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
+    border: 5px solid transparent; border-left-color: #111827;
+  }
+  .chat-launcher:hover .chat-bubble-label { opacity: 1; transform: translateY(-50%) translateX(-4px); }
+
+  .chat-panel {
+    position: fixed; bottom: 96px; right: 24px;
+    width: 420px; max-width: calc(100vw - 32px);
+    height: min(680px, calc(100vh - 120px));
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    display: flex; flex-direction: column;
+    z-index: 49;
+    overflow: hidden;
+    transform-origin: bottom right;
+    transition: transform .22s cubic-bezier(.2,.9,.25,1.05), opacity .2s ease;
+  }
+  .chat-panel.hidden {
+    transform: scale(.92) translateY(8px); opacity: 0; pointer-events: none;
+  }
+
+  .chat-head {
+    padding: 16px 18px;
+    background: linear-gradient(135deg, #0a7abc 0%, #07547f 100%);
+    color: #fff;
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .chat-head .avatar {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: rgba(255,255,255,0.18);
+    display: grid; place-items: center;
+    font-weight: 700;
+  }
+  .chat-head h4 { margin: 0; font-size: 15px; font-weight: 700; }
+  .chat-head .sub { margin-top: 2px; font-size: 12px; opacity: 0.85; display: flex; align-items: center; gap: 6px; }
+  .chat-head .sub .dot { background: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25); }
+  .chat-head .head-actions { margin-left: auto; display: flex; gap: 4px; }
+  .chat-head button {
+    background: rgba(255,255,255,0.12); border: 0; color: #fff;
+    width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .chat-head button:hover { background: rgba(255,255,255,0.22); }
+  .chat-head svg { width: 16px; height: 16px; }
+
+  .chat-progress {
+    padding: 10px 18px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .chat-progress-bar {
+    flex: 1; height: 4px; background: #e4e9f2; border-radius: 999px; overflow: hidden;
+  }
+  .chat-progress-fill {
+    height: 100%; background: var(--blue); border-radius: 999px;
+    transition: width .35s ease;
+  }
+  .chat-progress strong { color: var(--ink); font-weight: 700; }
+
+  .chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    background: #fafbfd;
+    scroll-behavior: smooth;
+  }
+  .chat-body::-webkit-scrollbar { width: 8px; }
+  .chat-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+  .msg { display: flex; gap: 10px; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .msg.bot .bubble {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 16px 16px 16px 4px;
+  }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble {
+    background: var(--blue); color: #fff;
+    border-radius: 16px 16px 4px 16px;
+    max-width: 78%;
+  }
+  .bubble {
+    padding: 10px 13px;
+    font-size: 14px; line-height: 1.5;
+    max-width: 85%;
+    word-wrap: break-word;
+  }
+  .msg.bot .avatar-sm {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .quick-replies {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 4px; margin-left: 38px;
+  }
+  .chip {
+    border: 1px solid #d6e5f1;
+    background: var(--blue-soft); color: var(--blue);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .chip:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .chip.selected { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .typing { display: inline-flex; gap: 3px; align-items: center; padding: 4px 0; }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: .15s; }
+  .typing span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .chat-input {
+    padding: 12px;
+    border-top: 1px solid var(--line);
+    background: #fff;
+    display: flex; gap: 8px; align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .chat-input textarea {
+    flex: 1;
+    border: 1px solid #c9d4e3;
+    border-radius: 12px;
+    padding: 10px 12px;
+    resize: none;
+    outline: none;
+    font-size: 14px;
+    min-height: 40px;
+    max-height: 120px;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  .chat-input textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(8, 106, 166, 0.14);
+  }
+  .chat-input .send {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: 12px; background: var(--blue); color: #fff;
+    border: 0; cursor: pointer; display: grid; place-items: center;
+  }
+  .chat-input .send:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chat-input .send:hover:not(:disabled) { background: var(--blue-dark); }
+  .chat-input .send svg { width: 18px; height: 18px; }
+
+  .chat-footer {
+    padding: 6px 12px 10px;
+    background: #fff;
+    border-top: 1px solid var(--line);
+    font-size: 10px; color: var(--muted);
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Feedback result styling ---------- */
+  .feedback {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+    margin-top: 4px;
+    overflow: hidden;
+    animation: fadeIn .4s ease;
+    max-width: 100%;
+  }
+
+  /* Score card variant */
+  .feedback .score-head {
+    padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .score-dot {
+    width: 46px; height: 46px; border-radius: 50%;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 18px;
+    flex-shrink: 0;
+  }
+  .score-dot.green { background: var(--green); box-shadow: 0 0 0 4px rgba(8, 127, 91, 0.15); }
+  .score-dot.amber { background: #d97706; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.15); }
+  .score-dot.red { background: var(--red); box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.15); }
+  .score-label { font-size: 13px; font-weight: 700; }
+  .score-label small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; margin-top: 2px; }
+
+  .feedback-sections { padding: 4px 0; }
+  .feedback-section { padding: 12px 14px; border-top: 1px solid var(--line); }
+  .feedback-section:first-child { border-top: 0; }
+  .feedback-section h5 {
+    margin: 0 0 8px 0; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); display: flex; align-items: center; gap: 6px;
+  }
+  .feedback-section h5 .icon { width: 14px; height: 14px; }
+  .feedback-section ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .feedback-section li {
+    font-size: 13px; line-height: 1.5;
+    padding-left: 16px; position: relative;
+  }
+  .feedback-section li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .feedback-section.pros li::before { background: var(--green); }
+  .feedback-section.cons li::before { background: #d97706; }
+  .feedback-section.flags li::before { background: var(--red); }
+
+  /* Memo variant */
+  .feedback.memo { background: #fcfcf9; }
+  .memo-head {
+    padding: 14px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+  }
+  .memo-head .stamp {
+    display: inline-block;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    padding: 3px 7px; border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .memo-head .stamp.green { background: rgba(8, 127, 91, 0.1); color: var(--green); }
+  .memo-head .stamp.amber { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+  .memo-head .stamp.red { background: rgba(180, 35, 24, 0.1); color: var(--red); }
+  .memo-head h6 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .memo-head .sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
+  .memo-body { padding: 14px; font-size: 13px; line-height: 1.65; }
+  .memo-body p { margin: 0 0 10px 0; }
+  .memo-body p:last-child { margin: 0; }
+  .memo-body strong { color: var(--ink); }
+  .memo-foot {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center;
+    background: #fff;
+  }
+
+  /* Summary variant (inline, no card) */
+  .feedback.summary {
+    border: 0; background: transparent; padding: 0;
+  }
+  .summary-verdict {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 13px;
+    padding: 5px 10px; border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .summary-verdict.green { background: rgba(8, 127, 91, 0.1); color: var(--green); }
+  .summary-verdict.amber { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+  .summary-verdict.red { background: rgba(180, 35, 24, 0.1); color: var(--red); }
+  .summary-verdict .score-dot-sm { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+  .feedback-actions {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    display: flex; gap: 8px; flex-wrap: wrap;
+    background: #fff;
+  }
+  .feedback-actions .chip { font-size: 12px; }
+
+  /* Tweaks panel */
+  .tweaks-panel {
+    position: fixed; bottom: 24px; left: 24px;
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: var(--shadow-lg);
+    padding: 14px; z-index: 60;
+    width: 260px;
+    font-size: 13px;
+    display: none;
+  }
+  .tweaks-panel.active { display: block; }
+  .tweaks-panel h5 { margin: 0 0 10px 0; font-size: 13px; font-weight: 700; }
+  .tweaks-panel .tweak-label {
+    display: block; color: var(--muted); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .tweaks-panel .tweak-group { margin-bottom: 14px; }
+  .tweaks-panel .tweak-group:last-child { margin-bottom: 0; }
+  .tweak-options { display: grid; gap: 6px; }
+  .tweak-option {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    background: #fff;
+    font-size: 13px;
+    transition: all .15s;
+  }
+  .tweak-option:hover { background: #f8fafc; }
+  .tweak-option.active { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+  .tweak-option input { margin: 0; }
+  .tweak-option small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; margin-top: 2px; }
+
+  .tweak-reset {
+    margin-top: 6px; width: 100%;
+    padding: 7px; background: #f1f5f9; border: 0; border-radius: 8px;
+    font-size: 12px; cursor: pointer; color: var(--muted); font-weight: 600;
+  }
+  .tweak-reset:hover { background: #e4e9f2; color: var(--ink); }
+
+  @media (max-width: 500px) {
+    .chat-panel {
+      right: 0; bottom: 0; left: 0;
+      width: 100%; max-width: 100%;
+      height: 100vh;
+      border-radius: 0;
+    }
+    .chat-launcher { bottom: 16px; right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Editable config for Tweaks -->
+<script>
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "feedbackFormat": "scorecard",
+    "autoOpenChat": false
+  }/*EDITMODE-END*/;
+  window.__tweaks = { ...TWEAK_DEFAULTS };
+</script>
+
+<div class="shell">
+  <!-- Top bar -->
+  <header class="topbar">
+    <div>
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="34" height="34" rx="8" fill="#086aa6"/>
+          <path d="M10 10h6.5a4.5 4.5 0 0 1 0 9H10v-9Zm0 9h7.5a4.5 4.5 0 0 1 0 9H10v-9Z" fill="#fff"/>
+        </svg>
+        Bloomfield market tools
+      </div>
+      <h1>Senior housing agent hub</h1>
+      <p class="lede">One landing page for repeatable screening workflows. Start with sales comps, run property demographics, and add new underwriting agents as the toolkit grows.</p>
+    </div>
+    <span class="status-pill"><span class="dot"></span> Vercel production hub</span>
+  </header>
+
+  <!-- Agents section -->
+  <div class="section-head">
+    <div>
+      <h2>Agents</h2>
+      <p>Choose a workflow to run. More tiles can be added as we consolidate the toolkit.</p>
+    </div>
+  </div>
+
+  <div class="agent-grid">
+    <div class="agent-card">
+      <div class="agent-icon">↗</div>
+      <h3>Sales Comp Screener</h3>
+      <p>Run the senior housing comp screener with saved searches, comp rejection, memo PDF, CSV, and map output.</p>
+      <div class="agent-actions">
+        <button class="button">Run comp screener</button>
+        <span class="small-pill">Live in this hub</span>
+      </div>
+    </div>
+
+    <div class="agent-card">
+      <div class="agent-icon">◎</div>
+      <h3>Demographics Radius Agent</h3>
+      <p>Pull 1-, 3-, and 5-mile demographics for any address and compare the radii to county and state benchmarks.</p>
+      <div class="agent-actions">
+        <button class="button secondary">Run demographics</button>
+        <span class="small-pill">ACS 5-year</span>
+      </div>
+    </div>
+
+    <div class="agent-card">
+      <div class="agent-icon">★</div>
+      <h3>Senior Housing Review Agent</h3>
+      <p>Pull Google review data and discover public senior housing directory pages for reputation underwriting.</p>
+      <div class="agent-actions">
+        <button class="button secondary">Run reviews</button>
+        <span class="small-pill">Google + directories</span>
+      </div>
+    </div>
+
+    <div class="agent-card">
+      <div class="agent-icon">▦</div>
+      <h3>Rent Roll Analyzer</h3>
+      <p>Upload Excel, CSV, or PDF rent rolls and summarize units, beds, base rent, care fees, and revenue.</p>
+      <div class="agent-actions">
+        <button class="button secondary">Run rent roll</button>
+        <span class="small-pill">IL / AL / MC</span>
+      </div>
+    </div>
+
+    <div class="agent-card new">
+      <div class="agent-icon">💬</div>
+      <h3>Deal Review Desk</h3>
+      <p>Walk a new broker / borrower submission through an analyst-style review. Shana probes the deal, flags issues, and drafts a fit read.</p>
+      <div class="agent-actions">
+        <button class="button" id="openChatFromCard">Open review desk</button>
+        <span class="small-pill">Analyst review</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating chat launcher -->
+<div class="chat-launcher">
+  <span class="chat-bubble-label">Got a new deal in? Walk me through it.</span>
+  <button class="chat-bubble" id="chatBubble" aria-label="Open deal intake chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+    <span class="notify" id="notifyDot"></span>
+  </button>
+</div>
+
+<!-- Chat panel -->
+<div class="chat-panel hidden" id="chatPanel" aria-hidden="true">
+  <div class="chat-head">
+    <div class="avatar">BC</div>
+    <div>
+      <h4>Deal Review Desk</h4>
+      <div class="sub"><span class="dot"></span> Senior housing analyst · reviewing now</div>
+    </div>
+    <div class="head-actions">
+      <button id="resetChat" title="Start over">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+      <button id="closeChat" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="chat-progress" id="chatProgress">
+    <span><strong id="progressCount">0</strong> of 11 details</span>
+    <div class="chat-progress-bar"><div class="chat-progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span id="progressLabel">Deal review</span>
+  </div>
+
+  <div class="chat-body" id="chatBody"></div>
+
+  <form class="chat-input" id="chatForm">
+    <textarea id="chatText" rows="1" placeholder="Walk Shana through the deal…" autocomplete="off"></textarea>
+    <button type="submit" class="send" id="chatSend" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </form>
+  <div class="chat-footer">Analyst read · preliminary · not a commitment to lend</div>
+</div>
+
+<!-- Tweaks panel -->
+<div class="tweaks-panel" id="tweaksPanel">
+  <h5>Tweaks</h5>
+  <div class="tweak-group">
+    <span class="tweak-label">Feedback format</span>
+    <div class="tweak-options" id="formatTweaks">
+      <label class="tweak-option" data-format="scorecard">
+        <input type="radio" name="format" value="scorecard">
+        <div>Score card<small>Traffic light + pros/cons/flags</small></div>
+      </label>
+      <label class="tweak-option" data-format="memo">
+        <input type="radio" name="format" value="memo">
+        <div>IC memo<small>Formatted paragraph w/ verdict stamp</small></div>
+      </label>
+      <label class="tweak-option" data-format="summary">
+        <input type="radio" name="format" value="summary">
+        <div>Chat summary<small>Inline verdict pill + quick reply</small></div>
+      </label>
+    </div>
+  </div>
+  <button class="tweak-reset" id="replayDemo">Replay demo deal</button>
+</div>
+
+<script>
+/* =====================================================================
+   Tweaks / edit-mode integration
+   ===================================================================== */
+(function() {
+  const tweaksPanel = document.getElementById('tweaksPanel');
+  const formatOpts = document.querySelectorAll('#formatTweaks .tweak-option');
+
+  function applyTweaks() {
+    formatOpts.forEach(o => {
+      const isActive = o.dataset.format === window.__tweaks.feedbackFormat;
+      o.classList.toggle('active', isActive);
+      o.querySelector('input').checked = isActive;
+    });
+    // Re-render last feedback if present
+    if (window.__lastDealPayload) {
+      renderFeedback(window.__lastDealPayload, window.__lastFeedback);
+    }
+  }
+
+  formatOpts.forEach(o => {
+    o.addEventListener('click', () => {
+      const v = o.dataset.format;
+      window.__tweaks.feedbackFormat = v;
+      applyTweaks();
+      window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { feedbackFormat: v } }, '*');
+    });
+  });
+
+  document.getElementById('replayDemo').addEventListener('click', () => {
+    replayDemo();
+  });
+
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.type === '__activate_edit_mode') {
+      tweaksPanel.classList.add('active');
+    } else if (d.type === '__deactivate_edit_mode') {
+      tweaksPanel.classList.remove('active');
+    }
+  });
+
+  // Announce
+  window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+  applyTweaks();
+  window.__applyTweaks = applyTweaks;
+})();
+
+/* =====================================================================
+   Chat state + conversation flow
+   ===================================================================== */
+// Shana is reviewing a deal Nick just brought in from a broker/borrower.
+// Questions are phrased analyst-to-deal-officer, not intake-form-to-borrower.
+const FIELDS = [
+  { key: 'property',  label: 'Property & address',     q: "Start with the property — name and address?" },
+  { key: 'source',    label: 'Source', q: "Where did it come from — broker or direct from the borrower?", chips: ['Broker','Direct from borrower','Existing relationship','Returning sponsor'] },
+  { key: 'type',      label: 'Property type', q: "What's the care mix? IL, AL, MC, some combo?", chips: ['IL only','AL only','MC only','IL + AL','AL + MC','IL/AL/MC mix','Skilled nursing'] },
+  { key: 'units',     label: 'Unit / bed count', q: "How big is it — units and beds?" },
+  { key: 'vintage',   label: 'Vintage', q: "When was it built? Any recent capex or renovations worth noting?" },
+  { key: 'occupancy', label: 'Occupancy + trend', q: "What's occupancy running, and is the trend up, flat, or down over the last 6-12 months?" },
+  { key: 'operator',  label: 'Operator', q: "Who's the operator? Any prior history with them, and how many other communities do they run?" },
+  { key: 'noi',       label: 'In-place NOI / T-12', q: "What's the in-place NOI on the T-12? Any one-time items to strip out?" },
+  { key: 'ask',       label: 'Ask / basis', q: "What's the sponsor asking for — loan size and purchase price or as-is value?" },
+  { key: 'purpose',   label: 'Purpose & story', q: "And the story — acquisition, refi, bridge? What's the business plan?", chips: ['Acquisition','Refinance','Bridge','Cash-out refi','Value-add / turnaround','Construction'] },
+  { key: 'timing',    label: 'Timing', q: "When do they need to close, and are they talking to other lenders?" },
+];
+
+const state = {
+  idx: -1,       // index in FIELDS currently being asked
+  payload: {},   // collected answers
+  done: false,
+};
+
+const chatPanel  = document.getElementById('chatPanel');
+const chatBubble = document.getElementById('chatBubble');
+const chatBody   = document.getElementById('chatBody');
+const chatForm   = document.getElementById('chatForm');
+const chatText   = document.getElementById('chatText');
+const chatSend   = document.getElementById('chatSend');
+const notifyDot  = document.getElementById('notifyDot');
+const progressFill  = document.getElementById('progressFill');
+const progressCount = document.getElementById('progressCount');
+const progressLabel = document.getElementById('progressLabel');
+
+function openChat() {
+  chatPanel.classList.remove('hidden');
+  chatPanel.setAttribute('aria-hidden', 'false');
+  notifyDot.style.display = 'none';
+  setTimeout(() => chatText.focus(), 250);
+}
+function closeChat() {
+  chatPanel.classList.add('hidden');
+  chatPanel.setAttribute('aria-hidden', 'true');
+}
+
+chatBubble.addEventListener('click', () => {
+  chatPanel.classList.contains('hidden') ? openChat() : closeChat();
+});
+document.getElementById('closeChat').addEventListener('click', closeChat);
+document.getElementById('openChatFromCard').addEventListener('click', openChat);
+document.getElementById('resetChat').addEventListener('click', () => {
+  if (confirm('Start a new intake? Current conversation will be cleared.')) resetConversation();
+});
+
+chatText.addEventListener('input', () => {
+  chatText.style.height = 'auto';
+  chatText.style.height = Math.min(chatText.scrollHeight, 120) + 'px';
+});
+chatText.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    chatForm.requestSubmit();
+  }
+});
+
+chatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const txt = chatText.value.trim();
+  if (!txt) return;
+  handleUserInput(txt);
+  chatText.value = '';
+  chatText.style.height = 'auto';
+});
+
+function addBotMessage(text, { chips = null, feedback = null, delay = 600 } = {}) {
+  const typing = document.createElement('div');
+  typing.className = 'msg bot';
+  typing.innerHTML = `<div class="avatar-sm">BC</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatBody.appendChild(typing);
+  scrollChat();
+
+  return new Promise(res => {
+    setTimeout(() => {
+      typing.remove();
+      if (feedback) {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg bot';
+        wrap.innerHTML = `<div class="avatar-sm">BC</div><div style="max-width:90%">${feedback}</div>`;
+        chatBody.appendChild(wrap);
+      } else {
+        const m = document.createElement('div');
+        m.className = 'msg bot';
+        m.innerHTML = `<div class="avatar-sm">BC</div><div class="bubble">${text}</div>`;
+        chatBody.appendChild(m);
+      }
+      if (chips && chips.length) {
+        const cwrap = document.createElement('div');
+        cwrap.className = 'quick-replies';
+        chips.forEach(c => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'chip';
+          b.textContent = c;
+          b.addEventListener('click', () => {
+            cwrap.querySelectorAll('.chip').forEach(x => x.remove());
+            handleUserInput(c);
+          });
+          cwrap.appendChild(b);
+        });
+        chatBody.appendChild(cwrap);
+      }
+      scrollChat();
+      res();
+    }, delay);
+  });
+}
+
+function addUserMessage(text) {
+  const m = document.createElement('div');
+  m.className = 'msg user';
+  m.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+  chatBody.appendChild(m);
+  scrollChat();
+}
+
+function scrollChat() {
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* =====================================================================
+   Flow
+   ===================================================================== */
+async function startConversation() {
+  state.idx = -1;
+  state.payload = {};
+  state.done = false;
+  chatBody.innerHTML = '';
+  updateProgress();
+
+  await addBotMessage(
+    "Hi — I can help you review deal opportunities for Bloomfield Capital. Tell me about the deal request.",
+    { delay: 400 }
+  );
+  await addBotMessage(
+    "Quick reminder on the box: <strong>$4M–$30M</strong>, senior housing, operating assets only — no ground-up. We want a real operator, a coherent plan, and a basis that makes sense.",
+    { delay: 800 }
+  );
+  askNext();
+}
+
+async function askNext() {
+  state.idx++;
+  if (state.idx >= FIELDS.length) {
+    state.done = true;
+    await finalizeDeal();
+    return;
+  }
+  const f = FIELDS[state.idx];
+  updateProgress();
+  await addBotMessage(f.q, { chips: f.chips, delay: 500 });
+}
+
+async function handleUserInput(txt) {
+  if (state.done) {
+    // Post-feedback freeform chat
+    addUserMessage(txt);
+    await handleFollowUp(txt);
+    return;
+  }
+  if (state.idx < 0) {
+    addUserMessage(txt);
+    startConversation();
+    return;
+  }
+  const f = FIELDS[state.idx];
+  state.payload[f.key] = txt;
+  addUserMessage(txt);
+  updateProgress();
+  askNext();
+}
+
+function updateProgress() {
+  const filled = Object.keys(state.payload).length;
+  progressCount.textContent = filled;
+  progressFill.style.width = (filled / FIELDS.length * 100) + '%';
+  if (state.done) {
+    progressLabel.textContent = 'Read ready';
+    progressFill.style.width = '100%';
+  } else if (filled === 0) {
+    progressLabel.textContent = 'Deal review';
+  } else if (filled < 4) {
+    progressLabel.textContent = 'Property basics';
+  } else if (filled < 7) {
+    progressLabel.textContent = 'Operator & trend';
+  } else if (filled < 10) {
+    progressLabel.textContent = 'Numbers & story';
+  } else {
+    progressLabel.textContent = 'Wrapping up';
+  }
+}
+
+/* =====================================================================
+   Finalize → Claude feedback
+   ===================================================================== */
+async function finalizeDeal() {
+  updateProgress();
+  await addBotMessage("Alright, let me put it together. One sec.", { delay: 500 });
+
+  // thinking bubble
+  const typing = document.createElement('div');
+  typing.className = 'msg bot';
+  typing.innerHTML = `<div class="avatar-sm">BC</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatBody.appendChild(typing);
+  scrollChat();
+
+  let feedback;
+  try {
+    feedback = await generateFeedback(state.payload);
+  } catch (err) {
+    console.error(err);
+    feedback = fallbackFeedback(state.payload);
+  }
+  typing.remove();
+
+  window.__lastDealPayload = state.payload;
+  window.__lastFeedback = feedback;
+  renderFeedback(state.payload, feedback);
+
+  await addBotMessage("Want to push back on the sponsor on anything, or talk through sizing before we circle up?", { delay: 900 });
+}
+
+async function generateFeedback(deal) {
+  const prompt = `You are Shana Weiss, a senior housing analyst at Bloomfield Capital. You are on a quick deal-review call with Nick Coburn, who just brought in a new financing opportunity from a broker or borrower. You are giving Nick your honest, experienced read — colleague-to-colleague, not pitching the borrower.
+
+Voice:
+- Direct, experienced, analyst-at-a-whiteboard tone
+- Never address the user by name or use any first-person name
+- Reference the sponsor/operator/broker in the third person ("the sponsor is asking…", "their operator runs…")
+- No fluff, no marketing language, no "great opportunity" talk
+- Call out what's missing and what you'd want to dig into before IC
+
+Bloomfield credit box:
+- Loan size: $4M to $30M
+- All US geographies, senior housing (IL / AL / MC, sometimes SNF)
+- NO ground-up construction
+- Prioritize experienced operators, clear business plan, reasonable basis
+
+Deal Nick just walked through:
+- Property: ${deal.property || 'n/a'}
+- Source: ${deal.source || 'n/a'}
+- Care mix: ${deal.type || 'n/a'}
+- Size: ${deal.units || 'n/a'}
+- Vintage: ${deal.vintage || 'n/a'}
+- Occupancy / trend: ${deal.occupancy || 'n/a'}
+- Operator: ${deal.operator || 'n/a'}
+- In-place NOI / T-12: ${deal.noi || 'n/a'}
+- Ask / basis: ${deal.ask || 'n/a'}
+- Purpose / business plan: ${deal.purpose || 'n/a'}
+- Timing: ${deal.timing || 'n/a'}
+
+Return ONLY a JSON object (no markdown, no fences) with this shape:
+{
+  "verdict": "green" | "amber" | "red",
+  "verdict_label": "3-6 word verdict (e.g. 'Worth a term sheet', 'Dig deeper before IC', 'Pass — outside the box')",
+  "headline": "one sentence summary, analyst voice, 18-24 words max, no names",
+  "pros": ["2-4 short bullets of what works — analyst observations, not borrower-pitch language"],
+  "cons": ["2-4 short bullets of questions / concerns you'd want answered"],
+  "flags": ["0-3 hard blockers if any (outside box, ground-up, severe distress without a story)"],
+  "memo": "2-3 paragraph analyst read. Do NOT use any names. Reference the sponsor/operator in third person. Mention strategy, basis vs. in-place, operator depth, and what you'd want for IC.",
+  "next_steps": ["2-3 concrete asks to take back to the broker/sponsor"]
+}
+
+Score 'red' if outside the $4M-$30M box, ground-up construction, or clearly un-lendable. 'amber' for deals you'd want more detail on before committing a term sheet. 'green' only when the fit is clean.`;
+
+  const raw = await window.claude.complete(prompt);
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('no json in response');
+  return JSON.parse(m[0]);
+}
+
+function fallbackFeedback(deal) {
+  return {
+    verdict: 'amber',
+    verdict_label: 'Dig deeper before IC',
+    headline: "Based on what's on the table there's something here, but I'd want a few more data points before we commit.",
+    pros: ['Asset class is in our box', 'Operating asset — not ground-up'],
+    cons: ['Need more on operator track record in this submarket', 'Basis vs. in-place yield isn\'t clear yet', 'Business plan is thin on specifics'],
+    flags: [],
+    memo: "High level this feels workable. Size and asset class are in the box and it's an operating asset, not ground-up.\n\nBefore a term sheet makes sense, want to see the operator's other communities and how they've performed on similar care mixes. Also need to pressure-test basis against recent senior housing comps in the submarket and understand what's driving the in-place number — strip out any one-time items.\n\nCircle back once the OM, rent roll, and T-12 are in from the broker and it can be sharpened up.",
+    next_steps: ['Get the OM + rent roll + T-12 from the broker', 'Pull operator\'s other community list', 'Run comps on the submarket basis']
+  };
+}
+
+/* =====================================================================
+   Render feedback (3 variants)
+   ===================================================================== */
+function renderFeedback(deal, fb) {
+  // Remove any prior feedback block
+  chatBody.querySelectorAll('.feedback-wrapper').forEach(n => n.remove());
+
+  const fmt = window.__tweaks.feedbackFormat;
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot feedback-wrapper';
+
+  let html = '';
+  if (fmt === 'memo') html = renderMemo(deal, fb);
+  else if (fmt === 'summary') html = renderSummary(deal, fb);
+  else html = renderScorecard(deal, fb);
+
+  wrap.innerHTML = `<div class="avatar-sm">BC</div><div style="max-width:92%">${html}</div>`;
+  chatBody.appendChild(wrap);
+  scrollChat();
+}
+
+const verdictText = (v) => v === 'green' ? 'Strong fit' : v === 'amber' ? 'Conditional' : 'Outside the box';
+
+function renderScorecard(deal, fb) {
+  const scoreLetter = fb.verdict === 'green' ? '✓' : fb.verdict === 'amber' ? '!' : '×';
+  return `
+    <div class="feedback">
+      <div class="score-head">
+        <div class="score-dot ${fb.verdict}">${scoreLetter}</div>
+        <div class="score-label">
+          ${escapeHtml(fb.verdict_label || verdictText(fb.verdict))}
+          <small>${escapeHtml(fb.headline || '')}</small>
+        </div>
+      </div>
+      <div class="feedback-sections">
+        ${fb.pros?.length ? `
+          <div class="feedback-section pros">
+            <h5>What works</h5>
+            <ul>${fb.pros.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>
+          </div>` : ''}
+        ${fb.cons?.length ? `
+          <div class="feedback-section cons">
+            <h5>What I'd want to dig into</h5>
+            <ul>${fb.cons.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>
+          </div>` : ''}
+        ${fb.flags?.length ? `
+          <div class="feedback-section flags">
+            <h5>Hard flags</h5>
+            <ul>${fb.flags.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>
+          </div>` : ''}
+      </div>
+      ${renderActions(fb)}
+    </div>
+  `;
+}
+
+function renderMemo(deal, fb) {
+  const paragraphs = (fb.memo || '').split(/\n\n+/).map(p => `<p>${escapeHtml(p)}</p>`).join('');
+  return `
+    <div class="feedback memo">
+      <div class="memo-head">
+        <span class="stamp ${fb.verdict}">${(fb.verdict || '').toUpperCase()} · ${escapeHtml(fb.verdict_label || verdictText(fb.verdict))}</span>
+        <h6>${escapeHtml(deal.property || 'Deal memo')}</h6>
+        <div class="sub">${escapeHtml([deal.type, deal.units, deal.ask].filter(Boolean).join(' · '))}</div>
+      </div>
+      <div class="memo-body">
+        ${paragraphs || `<p>${escapeHtml(fb.headline || '')}</p>`}
+      </div>
+      <div class="memo-foot">
+        <span>Bloomfield · Deal Review</span>
+        <span>${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+      </div>
+      ${renderActions(fb)}
+    </div>
+  `;
+}
+
+function renderSummary(deal, fb) {
+  return `
+    <div class="feedback summary">
+      <div style="padding:10px 13px;background:#fff;border:1px solid var(--line);border-radius:16px 16px 16px 4px;">
+        <span class="summary-verdict ${fb.verdict}">
+          <span class="score-dot-sm"></span> ${escapeHtml(fb.verdict_label || verdictText(fb.verdict))}
+        </span>
+        <div style="font-size:14px;line-height:1.55;">${escapeHtml(fb.headline || '')}</div>
+        ${fb.pros?.length || fb.cons?.length ? `
+          <div style="margin-top:10px;display:grid;gap:4px;font-size:13px;color:var(--muted);line-height:1.5;">
+            ${(fb.pros||[]).slice(0,2).map(p => `<div>✓ ${escapeHtml(p)}</div>`).join('')}
+            ${(fb.cons||[]).slice(0,2).map(p => `<div style="color:#b45309">! ${escapeHtml(p)}</div>`).join('')}
+            ${(fb.flags||[]).slice(0,2).map(p => `<div style="color:var(--red)">⚠ ${escapeHtml(p)}</div>`).join('')}
+          </div>` : ''}
+      </div>
+      ${fb.next_steps?.length ? `
+        <div class="quick-replies" style="margin-left:0;margin-top:8px;">
+          ${fb.next_steps.map(s => `<span class="chip" style="cursor:default">${escapeHtml(s)}</span>`).join('')}
+        </div>` : ''}
+    </div>
+  `;
+}
+
+function renderActions(fb) {
+  if (!fb.next_steps?.length) return '';
+  return `
+    <div class="feedback-actions">
+      ${fb.next_steps.map(s => `<button type="button" class="chip" onclick="handleFollowUp('${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`).join('')}
+    </div>
+  `;
+}
+
+async function handleFollowUp(txt) {
+  // If called from chip click (not a typed user message), show it
+  const lastUser = chatBody.querySelector('.msg.user:last-of-type .bubble')?.textContent;
+  if (lastUser !== txt) addUserMessage(txt);
+
+  const prompt = `You are a senior housing analyst at Bloomfield Capital continuing a quick deal-review chat. Stay in character: direct, experienced, colleague-to-colleague. Never use any names — do not address the user by name and do not sign off with a name. Reference the sponsor/operator/broker in third person.
+
+The deal Nick brought in:
+${JSON.stringify(window.__lastDealPayload, null, 2)}
+
+Your earlier read: ${JSON.stringify(window.__lastFeedback)}
+
+User just said: "${txt}"
+
+Reply in 2-4 sentences. Analyst voice, not pitch voice. No names. No markdown, no JSON.`;
+
+  const typing = document.createElement('div');
+  typing.className = 'msg bot';
+  typing.innerHTML = `<div class="avatar-sm">BC</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatBody.appendChild(typing);
+  scrollChat();
+
+  try {
+    const reply = await window.claude.complete(prompt);
+    typing.remove();
+    await addBotMessage(escapeHtml(reply.trim()), { delay: 0 });
+  } catch (e) {
+    typing.remove();
+    await addBotMessage("Lost connection to the scoring engine. Drop what you've got in a note and circle back in a bit.", { delay: 0 });
+  }
+}
+window.handleFollowUp = handleFollowUp;
+
+function resetConversation() {
+  startConversation();
+}
+
+/* =====================================================================
+   Demo replay — prefills a sample deal quickly
+   ===================================================================== */
+async function replayDemo() {
+  if (chatPanel.classList.contains('hidden')) openChat();
+  resetConversation();
+  await wait(1500);
+  const demo = [
+    'Willow Creek Assisted Living — 4200 Elm St, Tulsa OK',
+    'Broker',
+    'AL + MC',
+    '78 units / 92 beds',
+    'Built 2012, light refresh in 2019 — nothing major',
+    '88%, trending up from 82% last spring',
+    'Heritage Senior Living — runs 6 other AL/MC communities in OK and TX',
+    '$2.1M T-12 NOI, management fee is understated by about $80K',
+    '$17M loan request on a $22M purchase price',
+    'Acquisition — sponsor thinks they can push rents $200/mo in 12 months',
+    'Wants to close in 60 days, talking to one other lender'
+  ];
+  for (const a of demo) {
+    await wait(900);
+    chatText.value = a;
+    chatForm.requestSubmit();
+  }
+}
+function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/* =====================================================================
+   Kick off
+   ===================================================================== */
+startConversation();
+</script>
+
+</body>
+</html>

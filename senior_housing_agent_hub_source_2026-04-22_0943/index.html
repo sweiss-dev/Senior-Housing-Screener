@@ -1,0 +1,2362 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bloomfield Agent Hub</title>
+    <meta
+      name="description"
+      content="Bloomfield Capital senior housing screening tools: sales comps, demographics, and reusable market analysis agents."
+    />
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f3f6fa;
+        --card: #ffffff;
+        --card-soft: #f8fafc;
+        --ink: #111827;
+        --muted: #627083;
+        --line: #dbe3ee;
+        --blue: #086aa6;
+        --blue-dark: #07547f;
+        --blue-soft: #eef4fa;
+        --shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.18);
+        --green: #087f5b;
+        --red: #b42318;
+        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        --radius: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(8, 106, 166, 0.12), transparent 34rem),
+          var(--bg);
+        color: var(--ink);
+        font-family: Satoshi, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: -0.01em;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 56px;
+      }
+
+      .topbar,
+      .panel,
+      .agent-card,
+      .metric-card {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: var(--shadow);
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-start;
+        padding: 22px;
+        border-radius: var(--radius);
+      }
+
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        color: var(--blue);
+        font-weight: 700;
+      }
+
+      .mark {
+        width: 34px;
+        height: 34px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        margin-top: 14px;
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+      }
+
+      .lede {
+        margin-top: 12px;
+        color: var(--muted);
+        max-width: 760px;
+        line-height: 1.6;
+      }
+
+      .status-pill,
+      .small-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--card-soft);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 8px 10px;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--green);
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        margin: 32px 0 14px;
+      }
+
+      .section-head h2 {
+        font-size: 18px;
+      }
+
+      .section-head p {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .agent-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+        gap: 16px;
+      }
+
+      .agent-card {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-height: 230px;
+        padding: 18px;
+        border-radius: var(--radius);
+        position: relative;
+      }
+
+      .agent-icon {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: rgba(8, 106, 166, 0.09);
+        color: var(--blue);
+      }
+
+      .agent-card h3 {
+        font-size: 18px;
+      }
+
+      .agent-card p {
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 14px;
+      }
+
+      .agent-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: auto;
+        flex-wrap: wrap;
+      }
+
+      .button {
+        border: 0;
+        border-radius: 12px;
+        padding: 11px 14px;
+        background: var(--blue);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .button:hover {
+        background: var(--blue-dark);
+      }
+
+      .button.secondary {
+        background: #eef4fa;
+        color: var(--blue);
+        border: 1px solid #d6e5f1;
+      }
+
+      .button.secondary:hover {
+        background: #e3eef7;
+      }
+
+      .button[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .panel {
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+
+      .panel.hidden {
+        display: none;
+      }
+
+      .workspace {
+        display: none;
+      }
+
+      .workspace.active {
+        display: block;
+      }
+
+      .workspace-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        margin: 32px 0 14px;
+      }
+
+      .workspace-head p {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+      }
+
+      .form-row.stack {
+        grid-template-columns: 1fr;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .input {
+        width: 100%;
+        border: 1px solid #c9d4e3;
+        border-radius: 12px;
+        background: #fff;
+        color: var(--ink);
+        padding: 12px 13px;
+        outline: none;
+      }
+
+      .input:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(8, 106, 166, 0.14);
+      }
+
+      .file-input {
+        border-style: dashed;
+        background: #fbfdff;
+      }
+
+      .file-input::file-selector-button {
+        border: 0;
+        border-radius: 10px;
+        background: #eef4fa;
+        color: var(--blue);
+        font-weight: 700;
+        padding: 8px 10px;
+        margin-right: 12px;
+        cursor: pointer;
+      }
+
+      .samples {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .sample {
+        border: 1px solid var(--line);
+        background: var(--card-soft);
+        color: var(--ink);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .empty {
+        min-height: 220px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        border: 1px dashed #cbd7e5;
+        border-radius: var(--radius);
+        color: var(--muted);
+      }
+
+      .empty strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      .result {
+        margin-top: 18px;
+        display: none;
+      }
+
+      .result.visible {
+        display: block;
+      }
+
+      .result-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      .result-head p {
+        margin-top: 6px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .source-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .source-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+        padding: 15px;
+      }
+
+      .source-card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .source-card h4 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .rating-line {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .rating-line strong {
+        color: var(--ink);
+        font-size: 18px;
+      }
+
+      .source-link {
+        color: var(--blue);
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 13px;
+      }
+
+      .snippet-list {
+        display: grid;
+        gap: 8px;
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--muted);
+        line-height: 1.45;
+        font-size: 13px;
+      }
+
+      .snippet-list li {
+        border-left: 3px solid #d6e5f1;
+        padding-left: 9px;
+      }
+
+      .metric-card {
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: none;
+      }
+
+      .metric-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .metric-card strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 22px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+
+      table {
+        width: 100%;
+        min-width: 880px;
+        border-collapse: collapse;
+        background: #fff;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #475569;
+        text-align: right;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      th:first-child,
+      td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        text-align: left;
+        font-weight: 700;
+        background: inherit;
+      }
+
+      td {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .positive {
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .negative {
+        color: var(--red);
+        font-weight: 700;
+      }
+
+      .notes {
+        margin-top: 14px;
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .detail-table td:first-child,
+      .detail-table th:first-child {
+        min-width: 120px;
+      }
+
+      .hint-library {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: #fbfdff;
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .hint-library-grid {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+        gap: 10px;
+      }
+
+      .hint-library-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .hint-status {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      @media (max-width: 760px) {
+        .hint-library-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .loader {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.45);
+        border-top-color: #fff;
+        animation: spin 0.85s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 860px) {
+        .topbar,
+        .section-head,
+        .result-head {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .agent-grid,
+        .metrics,
+        .source-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .shell {
+          width: min(100% - 22px, 1180px);
+          padding-top: 12px;
+        }
+      }
+      /* ------------ NEW badge on agent card ------------ */
+      .agent-card.new::after {
+        content: "NEW";
+        position: absolute; top: 14px; right: 14px;
+        background: var(--blue); color: #fff;
+        font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+        padding: 3px 7px; border-radius: 6px;
+      }
+
+      /* ------------ Chat launcher bubble ------------ */
+      .chat-launcher {
+        position: fixed; bottom: 24px; right: 24px; z-index: 50;
+      }
+      .chat-bubble {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: var(--blue); color: #fff;
+        display: grid; place-items: center;
+        border: 0; cursor: pointer;
+        box-shadow: var(--shadow-lg);
+        transition: transform .18s ease, background .18s ease;
+        position: relative;
+      }
+      .chat-bubble:hover { background: var(--blue-dark); transform: translateY(-2px); }
+      .chat-bubble svg { width: 26px; height: 26px; }
+      .chat-bubble .notify {
+        position: absolute; top: 6px; right: 6px;
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #ef4444; border: 2px solid #fff;
+      }
+      .chat-bubble-label {
+        position: absolute; right: 72px; top: 50%; transform: translateY(-50%);
+        background: #111827; color: #fff;
+        font-size: 12px; font-weight: 600; padding: 7px 10px; border-radius: 8px;
+        white-space: nowrap; box-shadow: var(--shadow);
+        opacity: 0; pointer-events: none;
+        transition: opacity .2s ease, transform .2s ease;
+      }
+      .chat-bubble-label::after {
+        content: ""; position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
+        border: 5px solid transparent; border-left-color: #111827;
+      }
+      .chat-launcher:hover .chat-bubble-label { opacity: 1; transform: translateY(-50%) translateX(-4px); }
+
+      /* ------------ Chat panel ------------ */
+      .chat-panel {
+        position: fixed; bottom: 96px; right: 24px;
+        width: 420px; max-width: calc(100vw - 32px);
+        height: min(680px, calc(100vh - 120px));
+        background: #fff; border: 1px solid var(--line); border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        display: flex; flex-direction: column;
+        z-index: 49; overflow: hidden;
+        transform-origin: bottom right;
+        transition: transform .22s cubic-bezier(.2,.9,.25,1.05), opacity .2s ease;
+      }
+      .chat-panel.hidden { transform: scale(.92) translateY(8px); opacity: 0; pointer-events: none; }
+
+      .chat-head {
+        padding: 16px 18px;
+        background: linear-gradient(135deg, #0a7abc 0%, #07547f 100%);
+        color: #fff; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+      }
+      .chat-head .avatar {
+        width: 38px; height: 38px; border-radius: 12px;
+        background: rgba(255,255,255,0.18); display: grid; place-items: center; font-weight: 700;
+      }
+      .chat-head h4 { margin: 0; font-size: 15px; font-weight: 700; }
+      .chat-head .sub { margin-top: 2px; font-size: 12px; opacity: 0.85; display: flex; align-items: center; gap: 6px; }
+      .chat-head .sub .dot { background: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25); }
+      .chat-head .head-actions { margin-left: auto; display: flex; gap: 4px; }
+      .chat-head button {
+        background: rgba(255,255,255,0.12); border: 0; color: #fff;
+        width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: grid; place-items: center;
+      }
+      .chat-head button:hover { background: rgba(255,255,255,0.22); }
+      .chat-head svg { width: 16px; height: 16px; }
+
+      .chat-progress {
+        padding: 10px 18px; background: #f8fafc; border-bottom: 1px solid var(--line);
+        font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+      }
+      .chat-progress-bar { flex: 1; height: 4px; background: #e4e9f2; border-radius: 999px; overflow: hidden; }
+      .chat-progress-fill { height: 100%; background: var(--blue); border-radius: 999px; transition: width .35s ease; }
+      .chat-progress strong { color: var(--ink); font-weight: 700; }
+
+      .chat-body {
+        flex: 1; overflow-y: auto; padding: 18px;
+        display: flex; flex-direction: column; gap: 12px;
+        background: #fafbfd; scroll-behavior: smooth;
+      }
+      .chat-body::-webkit-scrollbar { width: 8px; }
+      .chat-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+      .msg { display: flex; gap: 10px; animation: chatFadeIn .25s ease; }
+      @keyframes chatFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+      .msg.bot .bubble {
+        background: #fff; border: 1px solid var(--line); color: var(--ink);
+        border-radius: 16px 16px 16px 4px;
+      }
+      .msg.user { justify-content: flex-end; }
+      .msg.user .bubble {
+        background: var(--blue); color: #fff;
+        border-radius: 16px 16px 4px 16px; max-width: 78%;
+      }
+      .bubble { padding: 10px 13px; font-size: 14px; line-height: 1.5; max-width: 85%; word-wrap: break-word; }
+      .msg.bot .avatar-sm {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: var(--blue); color: #fff;
+        display: grid; place-items: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+      }
+
+      .quick-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; margin-left: 38px; }
+      .chip {
+        border: 1px solid #d6e5f1; background: var(--blue-soft); color: var(--blue);
+        border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 600;
+        cursor: pointer; transition: all .15s ease;
+      }
+      .chip:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+      .typing { display: inline-flex; gap: 3px; align-items: center; padding: 4px 0; }
+      .typing span {
+        width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+        animation: chatBounce 1.2s infinite ease-in-out;
+      }
+      .typing span:nth-child(2) { animation-delay: .15s; }
+      .typing span:nth-child(3) { animation-delay: .3s; }
+      @keyframes chatBounce {
+        0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
+      }
+
+      .chat-input {
+        padding: 12px; border-top: 1px solid var(--line); background: #fff;
+        display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+      }
+      .chat-input textarea {
+        flex: 1; border: 1px solid #c9d4e3; border-radius: 12px;
+        padding: 10px 12px; resize: none; outline: none;
+        font-size: 14px; min-height: 40px; max-height: 120px;
+        font-family: inherit; line-height: 1.4;
+      }
+      .chat-input textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8, 106, 166, 0.14); }
+      .chat-input .send {
+        width: 40px; height: 40px; flex-shrink: 0;
+        border-radius: 12px; background: var(--blue); color: #fff;
+        border: 0; cursor: pointer; display: grid; place-items: center;
+      }
+      .chat-input .send:disabled { opacity: 0.4; cursor: not-allowed; }
+      .chat-input .send:hover:not(:disabled) { background: var(--blue-dark); }
+      .chat-input .send svg { width: 18px; height: 18px; }
+
+      .chat-footer {
+        padding: 6px 12px 10px; background: #fff; border-top: 1px solid var(--line);
+        font-size: 10px; color: var(--muted); text-align: center; flex-shrink: 0;
+      }
+
+      /* ------------ Feedback result cards ------------ */
+      .feedback {
+        border: 1px solid var(--line); border-radius: 14px; background: #fff;
+        margin-top: 4px; overflow: hidden; animation: chatFadeIn .4s ease; max-width: 100%;
+      }
+      .feedback .score-head {
+        padding: 14px; display: flex; align-items: center; gap: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .score-dot {
+        width: 46px; height: 46px; border-radius: 50%;
+        display: grid; place-items: center;
+        color: #fff; font-weight: 700; font-size: 18px; flex-shrink: 0;
+      }
+      .score-dot.green { background: var(--green); box-shadow: 0 0 0 4px rgba(8, 127, 91, 0.15); }
+      .score-dot.amber { background: #d97706; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.15); }
+      .score-dot.red { background: var(--red); box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.15); }
+      .score-label { font-size: 13px; font-weight: 700; }
+      .score-label small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; margin-top: 2px; }
+
+      .feedback-sections { padding: 4px 0; }
+      .feedback-section { padding: 12px 14px; border-top: 1px solid var(--line); }
+      .feedback-section:first-child { border-top: 0; }
+      .feedback-section h5 {
+        margin: 0 0 8px 0; font-size: 11px; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+      }
+      .feedback-section ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+      .feedback-section li { font-size: 13px; line-height: 1.5; padding-left: 16px; position: relative; }
+      .feedback-section li::before {
+        content: ""; position: absolute; left: 0; top: 8px;
+        width: 6px; height: 6px; border-radius: 50%;
+      }
+      .feedback-section.pros li::before { background: var(--green); }
+      .feedback-section.cons li::before { background: #d97706; }
+      .feedback-section.flags li::before { background: var(--red); }
+
+      .feedback.memo { background: #fcfcf9; }
+      .memo-head { padding: 14px; background: #fff; border-bottom: 1px solid var(--line); }
+      .memo-head .stamp {
+        display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+        padding: 3px 7px; border-radius: 4px; margin-bottom: 8px;
+      }
+      .memo-head .stamp.green { background: rgba(8, 127, 91, 0.1); color: var(--green); }
+      .memo-head .stamp.amber { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+      .memo-head .stamp.red { background: rgba(180, 35, 24, 0.1); color: var(--red); }
+      .memo-head h6 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+      .memo-head .sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
+      .memo-body { padding: 14px; font-size: 13px; line-height: 1.65; }
+      .memo-body p { margin: 0 0 10px 0; }
+      .memo-body p:last-child { margin: 0; }
+      .memo-foot {
+        padding: 10px 14px; border-top: 1px solid var(--line);
+        font-size: 11px; color: var(--muted);
+        display: flex; justify-content: space-between; align-items: center; background: #fff;
+      }
+
+      .feedback.summary { border: 0; background: transparent; padding: 0; }
+      .summary-verdict {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-weight: 700; font-size: 13px; padding: 5px 10px; border-radius: 999px; margin-bottom: 8px;
+      }
+      .summary-verdict.green { background: rgba(8, 127, 91, 0.1); color: var(--green); }
+      .summary-verdict.amber { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+      .summary-verdict.red { background: rgba(180, 35, 24, 0.1); color: var(--red); }
+      .summary-verdict .score-dot-sm { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+      .feedback-actions {
+        padding: 10px 14px; border-top: 1px solid var(--line);
+        display: flex; gap: 8px; flex-wrap: wrap; background: #fff;
+      }
+
+      @media (max-width: 500px) {
+        .chat-panel { right: 0; bottom: 0; left: 0; width: 100%; max-width: 100%; height: 100vh; border-radius: 0; }
+        .chat-launcher { bottom: 16px; right: 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <div class="brand">
+            <svg class="mark" viewBox="0 0 40 40" fill="none" aria-label="Bloomfield tools">
+              <circle cx="20" cy="20" r="15" stroke="currentColor" stroke-width="2" opacity=".25"></circle>
+              <circle cx="20" cy="20" r="9" stroke="currentColor" stroke-width="2" opacity=".55"></circle>
+              <circle cx="20" cy="20" r="3" fill="currentColor"></circle>
+              <path d="M20 5v6M20 29v6M5 20h6M29 20h6" stroke="currentColor" stroke-width="2"></path>
+            </svg>
+            Bloomfield market tools
+          </div>
+          <h1>Senior housing agent hub</h1>
+          <p class="lede">
+            One landing page for repeatable screening workflows. Start with sales comps, run property demographics,
+            and add new underwriting agents as the toolkit grows.
+          </p>
+        </div>
+        <span class="status-pill"><span class="dot"></span> Vercel production hub</span>
+      </header>
+
+      <section class="section-head" id="agentSectionHead">
+        <div>
+          <h2>Agents</h2>
+          <p>Choose a workflow to run. More tiles can be added as we consolidate the toolkit.</p>
+        </div>
+      </section>
+
+      <section class="agent-grid" id="agentGrid" aria-label="Agent tiles">
+        <article class="agent-card">
+          <div class="agent-icon">↗</div>
+          <div>
+            <h3>Sales Comp Screener</h3>
+            <p>
+              Run the senior housing comp screener with saved searches, comp rejection, memo PDF, CSV, and map output.
+            </p>
+          </div>
+          <div class="agent-actions">
+            <a
+              class="button"
+              href="/sales-comp/"
+            >
+              Run comp screener
+            </a>
+            <span class="small-pill">Live in this hub</span>
+          </div>
+        </article>
+
+        <article class="agent-card">
+          <div class="agent-icon">◎</div>
+          <div>
+            <h3>Demographics Radius Agent</h3>
+            <p>
+              Pull 1-, 3-, and 5-mile demographics for any address and compare the radii to county and state benchmarks.
+            </p>
+          </div>
+          <div class="agent-actions">
+            <button class="button" type="button" id="openDemographics">Run demographics</button>
+            <span class="small-pill">ACS 5-year</span>
+          </div>
+        </article>
+
+        <article class="agent-card">
+          <div class="agent-icon">★</div>
+          <div>
+            <h3>Senior Housing Review Agent</h3>
+            <p>
+              Pull Google review data and discover public senior housing directory pages for reputation underwriting.
+            </p>
+          </div>
+          <div class="agent-actions">
+            <button class="button" type="button" id="openReviews">Run reviews</button>
+            <span class="small-pill">Google + directories</span>
+          </div>
+        </article>
+
+        <article class="agent-card">
+          <div class="agent-icon">▦</div>
+          <div>
+            <h3>Rent Roll Analyzer</h3>
+            <p>
+              Upload Excel, CSV, or PDF rent rolls and summarize units, beds, base rent, care fees, and revenue.
+            </p>
+          </div>
+          <div class="agent-actions">
+            <button class="button" type="button" id="openRentRoll">Run rent roll</button>
+            <span class="small-pill">IL / AL / MC</span>
+          </div>
+        </article>
+
+        <article class="agent-card new">
+          <div class="agent-icon">💬</div>
+          <div>
+            <h3>Deal Review Desk</h3>
+            <p>
+              Walk a new broker / borrower submission through an analyst-style review. Flags issues and drafts a fit read.
+            </p>
+          </div>
+          <div class="agent-actions">
+            <button class="button" type="button" id="openChatFromCard">Open review desk</button>
+            <span class="small-pill">Analyst review</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="workspace" id="demographicsWorkspace" aria-label="Demographics Radius Agent workspace">
+        <div class="workspace-head">
+          <div>
+            <h2>Demographics Radius Agent</h2>
+            <p>Radii are shown as columns, with county and state comparison columns on the right.</p>
+          </div>
+          <button class="button secondary" type="button" id="backToAgents">Back to agents</button>
+        </div>
+
+        <section class="panel" id="demographicsPanel">
+          <form class="form-row" id="demoForm">
+            <input
+              class="input"
+              id="addressInput"
+              value="4410 Gulf Breeze Parkway, Gulf Breeze, FL"
+              placeholder="Enter property address"
+              autocomplete="street-address"
+            />
+            <button class="button" id="runButton" type="submit">Pull demographics</button>
+            <button class="button secondary" id="csvButton" type="button" disabled>CSV</button>
+          </form>
+          <div class="samples">
+            <button class="sample" type="button" data-address="4410 Gulf Breeze Parkway, Gulf Breeze, FL">
+              4410 Gulf Breeze Parkway
+            </button>
+            <button class="sample" type="button" data-address="2801 NW 55th Ave, Lauderhill, FL">
+              2801 NW 55th Ave
+            </button>
+            <button class="sample" type="button" data-address="1000 W Wilshire Blvd, Oklahoma City, OK">
+              1000 W Wilshire Blvd
+            </button>
+          </div>
+
+          <div class="empty" id="emptyState">
+            <div>
+              <strong>Run an address to build a market snapshot</strong>
+              <span>Population, growth, 75+ demographics, income, home value, and race composition.</span>
+            </div>
+          </div>
+
+          <div class="result" id="result">
+            <div class="result-head">
+              <div>
+                <h3 id="matchedAddress">Address match</h3>
+                <p id="geoSummary"></p>
+              </div>
+              <div class="agent-actions">
+                <span class="small-pill" id="vintage"></span>
+                <span class="small-pill" id="countyState"></span>
+              </div>
+            </div>
+            <div class="metrics" id="topMetrics"></div>
+            <div class="table-wrap">
+              <table id="demoTable"></table>
+            </div>
+            <div class="notes" id="methodology"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="workspace" id="reviewsWorkspace" aria-label="Senior Housing Review Agent workspace">
+        <div class="workspace-head">
+          <div>
+            <h2>Senior Housing Review Agent</h2>
+            <p>Enter a facility name/address or paste a review page URL to pull a reputation snapshot.</p>
+          </div>
+          <button class="button secondary" type="button" id="backToAgentsFromReviews">Back to agents</button>
+        </div>
+
+        <section class="panel" id="reviewsPanel">
+          <form class="form-row stack" id="reviewsForm">
+            <input
+              class="input"
+              id="reviewsInput"
+              value="The Meridian at Boca Raton, 21865 Ponderosa Dr, Boca Raton, FL"
+              placeholder="Enter facility name/address or paste a review page URL"
+              autocomplete="off"
+            />
+            <div class="form-actions">
+              <button class="button" id="reviewsRunButton" type="submit">Pull reviews</button>
+              <button class="button secondary" id="reviewsCsvButton" type="button" disabled>CSV</button>
+            </div>
+          </form>
+          <div class="samples">
+            <button class="sample" type="button" data-review-query="The Meridian at Boca Raton, 21865 Ponderosa Dr, Boca Raton, FL">
+              Meridian Boca Raton
+            </button>
+            <button class="sample" type="button" data-review-query="Atria Willow Wood, Fort Lauderdale, FL">
+              Atria Willow Wood
+            </button>
+            <button class="sample" type="button" data-review-query="Brookdale West Boynton Beach, Boynton Beach, FL">
+              Brookdale West Boynton
+            </button>
+            <button class="sample" type="button" data-review-query="https://www.aplaceformom.com/community/knoxville-landing-65250">
+              Knoxville Landing URL
+            </button>
+          </div>
+
+          <div class="empty" id="reviewsEmptyState">
+            <div>
+              <strong>Run a facility to build a review snapshot</strong>
+              <span>Google rating, review count, directory page discovery, rating extraction, and review snippets.</span>
+            </div>
+          </div>
+
+          <div class="result" id="reviewsResult">
+            <div class="result-head">
+              <div>
+                <h3 id="reviewsHeadline">Review snapshot</h3>
+                <p id="reviewsSummary"></p>
+              </div>
+              <div class="agent-actions">
+                <span class="small-pill" id="reviewsGenerated"></span>
+              </div>
+            </div>
+            <div class="metrics" id="reviewsTopMetrics"></div>
+            <div class="source-grid" id="reviewSources"></div>
+            <div class="notes" id="reviewsMethodology"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="workspace" id="rentRollWorkspace" aria-label="Senior Housing Rent Roll Analyzer workspace">
+        <div class="workspace-head">
+          <div>
+            <h2>Senior Housing Rent Roll Analyzer</h2>
+            <p>Upload a rent roll to summarize service type, unit type, units, beds, base rents, care fees, and total revenue.</p>
+          </div>
+          <button class="button secondary" type="button" id="backToAgentsFromRentRoll">Back to agents</button>
+        </div>
+
+        <section class="panel" id="rentRollPanel">
+          <form class="form-row stack" id="rentRollForm">
+            <input
+              class="input file-input"
+              id="rentRollFile"
+              type="file"
+              accept=".xlsx,.xls,.xlsm,.xlsb,.csv,.txt,.pdf,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+            />
+            <textarea
+              class="input"
+              id="rentRollHints"
+              rows="4"
+              placeholder="Optional classification hints, one per line. Example:&#10;Studio = Studio, ST, Efficiency&#10;1 BR = 1BD, One Bedroom&#10;Shared = Semi Private, Companion"
+            ></textarea>
+            <div class="hint-library" aria-label="Operator classification hints library">
+              <div class="hint-library-grid">
+                <input
+                  class="input"
+                  id="rentRollOperatorName"
+                  type="text"
+                  placeholder="Operator name, e.g. Atria, Cogir, Discovery"
+                />
+                <select class="input" id="rentRollHintSelect">
+                  <option value="">Saved operator mappings</option>
+                </select>
+              </div>
+              <div class="hint-library-actions">
+                <button class="button secondary" id="rentRollSaveHintsButton" type="button">Save mapping</button>
+                <button class="button secondary" id="rentRollLoadHintsButton" type="button">Load mapping</button>
+                <button class="button secondary" id="rentRollDeleteHintsButton" type="button">Delete mapping</button>
+                <button class="button secondary" id="rentRollExportHintsButton" type="button">Export library</button>
+                <button class="button secondary" id="rentRollImportHintsButton" type="button">Import library</button>
+                <input id="rentRollImportHintsFile" type="file" accept=".json,application/json" hidden />
+              </div>
+              <div class="hint-status" id="rentRollHintStatus">
+                Save recurring operator-specific mappings here, then reload them before analyzing future rent rolls from that operator.
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="button" id="rentRollRunButton" type="submit">Analyze rent roll</button>
+              <button class="button secondary" id="rentRollCsvButton" type="button" disabled>CSV</button>
+            </div>
+          </form>
+
+          <div class="empty" id="rentRollEmptyState">
+            <div>
+              <strong>Upload a rent roll to build an operating snapshot</strong>
+              <span>Best results come from Excel or CSV rent rolls with columns for unit, service line, unit type, rent, and care fees.</span>
+            </div>
+          </div>
+
+          <div class="result" id="rentRollResult">
+            <div class="result-head">
+              <div>
+                <h3 id="rentRollHeadline">Rent roll summary</h3>
+                <p id="rentRollSummary"></p>
+              </div>
+              <div class="agent-actions">
+                <span class="small-pill" id="rentRollGenerated"></span>
+                <span class="small-pill" id="rentRollConfidence"></span>
+              </div>
+            </div>
+            <div class="metrics" id="rentRollTopMetrics"></div>
+            <h3 style="margin: 18px 0 10px;">Underwriting rollup</h3>
+            <div class="table-wrap">
+              <table id="rentRollUnderwritingTable"></table>
+            </div>
+            <h3 style="margin: 18px 0 10px;">By service type</h3>
+            <div class="table-wrap">
+              <table id="rentRollServiceTable"></table>
+            </div>
+            <h3 style="margin: 18px 0 10px;">By service and unit type</h3>
+            <div class="table-wrap">
+              <table id="rentRollUnitTable"></table>
+            </div>
+            <h3 style="margin: 18px 0 10px;">Detail rows for audit</h3>
+            <div class="table-wrap">
+              <table class="detail-table" id="rentRollDetailTable"></table>
+            </div>
+            <div class="notes" id="rentRollNotes"></div>
+            <div class="notes" id="rentRollMethodology"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const state = { result: null, reviewResult: null, rentRollResult: null };
+      const metricRows = [
+        ["Population", (r) => formatNumber(r.population), (r) => r.population],
+        ["5Y population growth", (r) => formatGrowth(r.populationGrowth5Y), (r) => formatCsvPercent(r.populationGrowth5Y)],
+        ["75+ population", (r) => formatNumber(r.population75Plus), (r) => r.population75Plus],
+        ["75+ 5Y growth", (r) => formatGrowth(r.population75PlusGrowth5Y), (r) => formatCsvPercent(r.population75PlusGrowth5Y)],
+        ["Median income", (r) => formatCurrency(r.medianIncome), (r) => r.medianIncome],
+        ["Median home value", (r) => formatCurrency(r.medianHomeValue), (r) => r.medianHomeValue],
+        ["White", (r) => formatPercent(r.race.white), (r) => formatCsvPercent(r.race.white)],
+        ["Black", (r) => formatPercent(r.race.black), (r) => formatCsvPercent(r.race.black)],
+        ["Asian", (r) => formatPercent(r.race.asian), (r) => formatCsvPercent(r.race.asian)],
+        ["Hispanic", (r) => formatPercent(r.race.hispanic), (r) => formatCsvPercent(r.race.hispanic)],
+        ["Other", (r) => formatPercent(r.race.other), (r) => formatCsvPercent(r.race.other)],
+      ];
+
+      const form = document.getElementById("demoForm");
+      const input = document.getElementById("addressInput");
+      const button = document.getElementById("runButton");
+      const csvButton = document.getElementById("csvButton");
+      const resultEl = document.getElementById("result");
+      const emptyEl = document.getElementById("emptyState");
+      const table = document.getElementById("demoTable");
+      const agentSectionHead = document.getElementById("agentSectionHead");
+      const agentGrid = document.getElementById("agentGrid");
+      const demographicsWorkspace = document.getElementById("demographicsWorkspace");
+      const reviewsWorkspace = document.getElementById("reviewsWorkspace");
+      const rentRollWorkspace = document.getElementById("rentRollWorkspace");
+      const reviewsForm = document.getElementById("reviewsForm");
+      const reviewsInput = document.getElementById("reviewsInput");
+      const reviewsRunButton = document.getElementById("reviewsRunButton");
+      const reviewsCsvButton = document.getElementById("reviewsCsvButton");
+      const reviewsResultEl = document.getElementById("reviewsResult");
+      const reviewsEmptyEl = document.getElementById("reviewsEmptyState");
+      const rentRollForm = document.getElementById("rentRollForm");
+      const rentRollFile = document.getElementById("rentRollFile");
+      const rentRollHints = document.getElementById("rentRollHints");
+      const rentRollOperatorName = document.getElementById("rentRollOperatorName");
+      const rentRollHintSelect = document.getElementById("rentRollHintSelect");
+      const rentRollHintStatus = document.getElementById("rentRollHintStatus");
+      const rentRollImportHintsFile = document.getElementById("rentRollImportHintsFile");
+      const rentRollRunButton = document.getElementById("rentRollRunButton");
+      const rentRollCsvButton = document.getElementById("rentRollCsvButton");
+      const rentRollResultEl = document.getElementById("rentRollResult");
+      const rentRollEmptyEl = document.getElementById("rentRollEmptyState");
+      const RENT_ROLL_HINT_LIBRARY_KEY = "seniorHousingRentRollHintLibrary.v1";
+      let inMemoryRentRollHintLibrary = {};
+      let rentRollHintBackendMode = "checking";
+
+      document.getElementById("openDemographics").addEventListener("click", () => {
+        showDemographicsWorkspace();
+      });
+
+      document.getElementById("openReviews").addEventListener("click", () => {
+        showReviewsWorkspace();
+      });
+
+      document.getElementById("openRentRoll").addEventListener("click", () => {
+        showRentRollWorkspace();
+      });
+
+      document.getElementById("backToAgents").addEventListener("click", () => {
+        showAgentGrid();
+      });
+
+      document.getElementById("backToAgentsFromReviews").addEventListener("click", () => {
+        showAgentGrid();
+      });
+
+      document.getElementById("backToAgentsFromRentRoll").addEventListener("click", () => {
+        showAgentGrid();
+      });
+
+      function showDemographicsWorkspace() {
+        agentSectionHead.style.display = "none";
+        agentGrid.style.display = "none";
+        reviewsWorkspace.classList.remove("active");
+        rentRollWorkspace.classList.remove("active");
+        demographicsWorkspace.classList.add("active");
+        demographicsWorkspace.scrollIntoView({ behavior: "smooth", block: "start" });
+        input.focus();
+      }
+
+      function showReviewsWorkspace() {
+        agentSectionHead.style.display = "none";
+        agentGrid.style.display = "none";
+        demographicsWorkspace.classList.remove("active");
+        rentRollWorkspace.classList.remove("active");
+        reviewsWorkspace.classList.add("active");
+        reviewsWorkspace.scrollIntoView({ behavior: "smooth", block: "start" });
+        reviewsInput.focus();
+      }
+
+      function showRentRollWorkspace() {
+        agentSectionHead.style.display = "none";
+        agentGrid.style.display = "none";
+        demographicsWorkspace.classList.remove("active");
+        reviewsWorkspace.classList.remove("active");
+        rentRollWorkspace.classList.add("active");
+        rentRollWorkspace.scrollIntoView({ behavior: "smooth", block: "start" });
+        rentRollFile.focus();
+      }
+
+      function showAgentGrid() {
+        demographicsWorkspace.classList.remove("active");
+        reviewsWorkspace.classList.remove("active");
+        rentRollWorkspace.classList.remove("active");
+        agentSectionHead.style.display = "";
+        agentGrid.style.display = "";
+        agentSectionHead.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      document.querySelectorAll("[data-address]").forEach((sample) => {
+        sample.addEventListener("click", () => {
+          input.value = sample.dataset.address;
+          input.focus();
+        });
+      });
+
+      document.querySelectorAll("[data-review-query]").forEach((sample) => {
+        sample.addEventListener("click", () => {
+          reviewsInput.value = sample.dataset.reviewQuery;
+          reviewsInput.focus();
+        });
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await runDemographics();
+      });
+
+      csvButton.addEventListener("click", downloadCsv);
+
+      reviewsForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await runReviews();
+      });
+
+      reviewsCsvButton.addEventListener("click", downloadReviewsCsv);
+
+      rentRollForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await runRentRoll();
+      });
+
+      rentRollCsvButton.addEventListener("click", downloadRentRollCsv);
+
+      document.getElementById("rentRollSaveHintsButton").addEventListener("click", saveRentRollHints);
+      document.getElementById("rentRollLoadHintsButton").addEventListener("click", loadSelectedRentRollHints);
+      document.getElementById("rentRollDeleteHintsButton").addEventListener("click", deleteSelectedRentRollHints);
+      document.getElementById("rentRollExportHintsButton").addEventListener("click", exportRentRollHintLibrary);
+      document.getElementById("rentRollImportHintsButton").addEventListener("click", () => rentRollImportHintsFile.click());
+      rentRollImportHintsFile.addEventListener("change", importRentRollHintLibrary);
+      rentRollHintSelect.addEventListener("change", () => {
+        const selected = rentRollHintSelect.value;
+        if (selected) rentRollOperatorName.value = selected;
+      });
+      initializeRentRollHintLibrary();
+
+      async function runDemographics() {
+        const address = input.value.trim();
+        if (!address) return;
+        setLoading(true);
+        try {
+          const response = await fetch("/api/demographics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address }),
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.message || "Could not pull demographics.");
+          state.result = payload;
+          renderResult(payload);
+          csvButton.disabled = false;
+        } catch (error) {
+          alert(error.message || "Could not pull demographics.");
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function setLoading(isLoading) {
+        button.disabled = isLoading;
+        button.innerHTML = isLoading ? '<span class="loader"></span> Pulling data' : "Pull demographics";
+      }
+
+      async function runReviews() {
+        const query = reviewsInput.value.trim();
+        if (!query) return;
+        const sourceUrl = isHttpUrl(query) ? query : "";
+        setReviewsLoading(true);
+        try {
+          const response = await fetch("/api/reviews", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, sourceUrl }),
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not pull reviews.");
+          state.reviewResult = payload;
+          renderReviews(payload);
+          reviewsCsvButton.disabled = false;
+        } catch (error) {
+          alert(error.message || "Could not pull reviews.");
+        } finally {
+          setReviewsLoading(false);
+        }
+      }
+
+      function isHttpUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      }
+
+      function setReviewsLoading(isLoading) {
+        reviewsRunButton.disabled = isLoading;
+        reviewsRunButton.innerHTML = isLoading ? '<span class="loader"></span> Pulling reviews' : "Pull reviews";
+      }
+
+      async function runRentRoll() {
+        const file = rentRollFile.files && rentRollFile.files[0];
+        if (!file) {
+          alert("Upload a rent roll file first.");
+          return;
+        }
+        setRentRollLoading(true);
+        try {
+          const dataBase64 = await fileToBase64(file);
+          const response = await fetch("/api/rent-roll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: file.name,
+              mimeType: file.type || "application/octet-stream",
+              dataBase64,
+              classificationHints: rentRollHints.value || "",
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not analyze rent roll.");
+          state.rentRollResult = payload;
+          renderRentRoll(payload);
+          rentRollCsvButton.disabled = false;
+        } catch (error) {
+          alert(error.message || "Could not analyze rent roll.");
+        } finally {
+          setRentRollLoading(false);
+        }
+      }
+
+      function setRentRollLoading(isLoading) {
+        rentRollRunButton.disabled = isLoading;
+        rentRollRunButton.innerHTML = isLoading ? '<span class="loader"></span> Analyzing' : "Analyze rent roll";
+      }
+
+      async function initializeRentRollHintLibrary() {
+        const localLibrary = getLocalRentRollHintLibrary();
+        inMemoryRentRollHintLibrary = localLibrary;
+        refreshRentRollHintLibrary();
+        try {
+          const response = await fetch("/api/rent-roll-hints", { headers: { "Cache-Control": "no-cache" } });
+          const payload = await response.json();
+          if (payload.ok && payload.library) {
+            rentRollHintBackendMode = "google-drive";
+            inMemoryRentRollHintLibrary = payload.library;
+            setLocalRentRollHintLibrary(payload.library, false);
+            refreshRentRollHintLibrary();
+            setHintStatus("Hint library loaded from Google Drive.");
+          } else {
+            rentRollHintBackendMode = "local-fallback";
+            setHintStatus("Google Drive hint backend is not configured yet; using browser fallback for now.");
+          }
+        } catch {
+          rentRollHintBackendMode = "local-fallback";
+          setHintStatus("Could not reach the hints backend; using browser fallback for now.");
+        }
+      }
+
+      function getRentRollHintLibrary() {
+        return inMemoryRentRollHintLibrary && typeof inMemoryRentRollHintLibrary === "object"
+          ? inMemoryRentRollHintLibrary
+          : {};
+      }
+
+      function getLocalRentRollHintLibrary() {
+        try {
+          const raw = window.localStorage && window.localStorage.getItem(RENT_ROLL_HINT_LIBRARY_KEY);
+          return raw ? JSON.parse(raw) : inMemoryRentRollHintLibrary;
+        } catch {
+          // Browser storage can be unavailable in some embedded contexts; keep the in-memory copy active.
+        }
+        return inMemoryRentRollHintLibrary && typeof inMemoryRentRollHintLibrary === "object"
+          ? inMemoryRentRollHintLibrary
+          : {};
+      }
+
+      function setLocalRentRollHintLibrary(library, updateStatus = true) {
+        inMemoryRentRollHintLibrary = library && typeof library === "object" ? library : {};
+        try {
+          if (window.localStorage) {
+            window.localStorage.setItem(RENT_ROLL_HINT_LIBRARY_KEY, JSON.stringify(inMemoryRentRollHintLibrary));
+          }
+          if (updateStatus) setHintStatus("Hint library saved in this browser.");
+        } catch {
+          if (updateStatus) setHintStatus("Hint library saved for this session only. Use Export library for a durable backup.");
+        }
+      }
+
+      async function setRentRollHintLibrary(library) {
+        setLocalRentRollHintLibrary(library, false);
+        if (rentRollHintBackendMode === "google-drive") {
+          try {
+            const response = await fetch("/api/rent-roll-hints", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ library }),
+            });
+            const payload = await response.json();
+            if (!response.ok || !payload.ok) throw new Error(payload.message || "Drive save failed.");
+            inMemoryRentRollHintLibrary = payload.library || library;
+            setLocalRentRollHintLibrary(inMemoryRentRollHintLibrary, false);
+            setHintStatus("Hint library saved to Google Drive.");
+          } catch {
+            rentRollHintBackendMode = "local-fallback";
+            setHintStatus("Could not save to Google Drive; saved in this browser fallback.");
+          }
+        } else {
+          setHintStatus("Hint library saved in this browser. Configure Google Drive backend for cross-device persistence.");
+        }
+        refreshRentRollHintLibrary();
+      }
+
+      function refreshRentRollHintLibrary() {
+        const library = getRentRollHintLibrary();
+        const names = Object.keys(library).sort((a, b) => a.localeCompare(b));
+        const current = rentRollHintSelect.value;
+        rentRollHintSelect.innerHTML = `<option value="">Saved operator mappings</option>${names
+          .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+          .join("")}`;
+        if (current && names.includes(current)) rentRollHintSelect.value = current;
+        if (!names.length) setHintStatus("No saved mappings yet. Enter an operator name and hints, then click Save mapping.");
+      }
+
+      async function saveRentRollHints() {
+        const name = rentRollOperatorName.value.trim();
+        const hints = rentRollHints.value.trim();
+        if (!name) {
+          alert("Enter an operator name before saving this mapping.");
+          return;
+        }
+        if (!hints) {
+          alert("Enter classification hints before saving this mapping.");
+          return;
+        }
+        const library = getRentRollHintLibrary();
+        library[name] = {
+          operatorName: name,
+          classificationHints: hints,
+          updatedAt: new Date().toISOString(),
+        };
+        await setRentRollHintLibrary(library);
+        rentRollHintSelect.value = name;
+        if (rentRollHintBackendMode === "google-drive") setHintStatus(`Saved mapping for ${name} to Google Drive.`);
+      }
+
+      function loadSelectedRentRollHints() {
+        const name = rentRollHintSelect.value || rentRollOperatorName.value.trim();
+        const library = getRentRollHintLibrary();
+        const entry = library[name];
+        if (!name || !entry) {
+          alert("Select a saved operator mapping to load.");
+          return;
+        }
+        rentRollOperatorName.value = entry.operatorName || name;
+        rentRollHints.value = entry.classificationHints || "";
+        rentRollHintSelect.value = name;
+        setHintStatus(`Loaded mapping for ${name}.`);
+      }
+
+      async function deleteSelectedRentRollHints() {
+        const name = rentRollHintSelect.value || rentRollOperatorName.value.trim();
+        const library = getRentRollHintLibrary();
+        if (!name || !library[name]) {
+          alert("Select a saved operator mapping to delete.");
+          return;
+        }
+        if (!confirm(`Delete the saved mapping for ${name}?`)) return;
+        delete library[name];
+        await setRentRollHintLibrary(library);
+        rentRollHintSelect.value = "";
+        setHintStatus(`Deleted mapping for ${name}.`);
+      }
+
+      function exportRentRollHintLibrary() {
+        const library = getRentRollHintLibrary();
+        const payload = {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          mappings: library,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "rent-roll-classification-hints-library.json";
+        anchor.click();
+        URL.revokeObjectURL(url);
+        setHintStatus("Exported the hint library JSON backup.");
+      }
+
+      async function importRentRollHintLibrary(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const payload = JSON.parse(text);
+          const imported = payload.mappings && typeof payload.mappings === "object" ? payload.mappings : payload;
+          const library = { ...getRentRollHintLibrary() };
+          for (const [name, entry] of Object.entries(imported)) {
+            if (!name || !entry) continue;
+            const classificationHints = typeof entry === "string" ? entry : entry.classificationHints;
+            if (!classificationHints) continue;
+            library[name] = {
+              operatorName: entry.operatorName || name,
+              classificationHints,
+              updatedAt: entry.updatedAt || new Date().toISOString(),
+            };
+          }
+          await setRentRollHintLibrary(library);
+          setHintStatus("Imported hint library mappings.");
+        } catch (error) {
+          alert("Could not import this hint library JSON file.");
+        } finally {
+          event.target.value = "";
+        }
+      }
+
+      function setHintStatus(message) {
+        rentRollHintStatus.textContent = message;
+      }
+
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",").pop() || "");
+          reader.onerror = () => reject(new Error("Could not read uploaded file."));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function renderResult(data) {
+        emptyEl.style.display = "none";
+        resultEl.classList.add("visible");
+        document.getElementById("matchedAddress").textContent = data.matchedAddress;
+        document.getElementById("geoSummary").textContent =
+          `Coordinates ${data.coordinates.lat.toFixed(5)}, ${data.coordinates.lon.toFixed(5)}`;
+        document.getElementById("vintage").textContent = `${data.dataVintage.current} vs. ${data.dataVintage.prior}`;
+        document.getElementById("countyState").textContent = `${data.county.name} · ${data.state.name}`;
+        renderTopMetrics(data.rows);
+        renderTable(data.rows);
+        document.getElementById("methodology").innerHTML = data.methodology
+          .map((note) => `<div>• ${escapeHtml(note)}</div>`)
+          .join("");
+      }
+
+      function renderReviews(data) {
+        reviewsEmptyEl.style.display = "none";
+        reviewsResultEl.classList.add("visible");
+        document.getElementById("reviewsHeadline").textContent = data.headline;
+        document.getElementById("reviewsSummary").textContent = `Query: ${data.query}`;
+        document.getElementById("reviewsGenerated").textContent = `Updated ${new Date(data.generatedAt).toLocaleString()}`;
+
+        const foundSources = data.sources.filter((source) => source.status === "found").length;
+        const google = data.sources.find((source) => source.source === "Google") || {};
+        const metrics = [
+          ["Weighted rating", data.weightedRating ? `${data.weightedRating.toFixed(2)} / 5` : "N/A"],
+          ["Total reviews found", formatNumber(data.totalReviews || 0)],
+          ["Sources found", `${foundSources} of ${data.sources.length}`],
+          ["Google rating", google.rating ? `${Number(google.rating).toFixed(1)} / 5` : "N/A"],
+        ];
+        document.getElementById("reviewsTopMetrics").innerHTML = metrics
+          .map(([label, value]) => `<div class="metric-card"><span>${label}</span><strong>${value}</strong></div>`)
+          .join("");
+
+        document.getElementById("reviewSources").innerHTML = data.sources.map(renderReviewSource).join("");
+        document.getElementById("reviewsMethodology").innerHTML = data.methodology
+          .map((note) => `<div>• ${escapeHtml(note)}</div>`)
+          .join("");
+      }
+
+      function renderReviewSource(source) {
+        const rating = source.rating ? `${Number(source.rating).toFixed(1)} / 5` : "N/A";
+        const count = source.reviewCount ? `${formatNumber(source.reviewCount)} reviews` : "Review count N/A";
+        const snippets = (source.reviewSnippets || [])
+          .slice(0, 3)
+          .map((snippet) => `<li>${escapeHtml(snippet)}</li>`)
+          .join("");
+        return `
+          <article class="source-card">
+            <div class="source-card-head">
+              <div>
+                <h4>${escapeHtml(source.source)}</h4>
+                <div class="rating-line"><strong>${rating}</strong><span>${escapeHtml(count)}</span><span>${escapeHtml(source.status)}</span></div>
+              </div>
+              ${source.url ? `<a class="source-link" href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">Open</a>` : ""}
+            </div>
+            ${source.name ? `<p><strong>${escapeHtml(source.name)}</strong></p>` : ""}
+            ${source.summary ? `<p class="lede" style="font-size: 13px; margin-top: 6px;">${escapeHtml(source.summary)}</p>` : ""}
+            ${snippets ? `<ul class="snippet-list">${snippets}</ul>` : ""}
+            ${source.notes ? `<p class="lede" style="font-size: 13px; margin-top: 10px;">${escapeHtml(source.notes)}</p>` : ""}
+          </article>
+        `;
+      }
+
+      function downloadReviewsCsv() {
+        if (!state.reviewResult) return;
+        const lines = [
+          ["Source", "Status", "Name", "Rating", "Review Count", "URL", "Summary"].map(csvEscape).join(","),
+          ...state.reviewResult.sources.map((source) =>
+            [
+              source.source,
+              source.status,
+              source.name || "",
+              source.rating ?? "",
+              source.reviewCount ?? "",
+              source.url || "",
+              source.summary || source.notes || "",
+            ]
+              .map(csvEscape)
+              .join(","),
+          ),
+        ];
+        const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "senior-housing-review-snapshot.csv";
+        anchor.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function renderRentRoll(data) {
+        rentRollEmptyEl.style.display = "none";
+        rentRollResultEl.classList.add("visible");
+        document.getElementById("rentRollHeadline").textContent = `${data.rowsParsed} rent roll rows parsed`;
+        document.getElementById("rentRollSummary").textContent = `File: ${data.fileName}`;
+        document.getElementById("rentRollGenerated").textContent = `Updated ${new Date(data.generatedAt).toLocaleString()}`;
+        document.getElementById("rentRollConfidence").textContent = `Confidence ${Math.round((data.confidence || 0) * 100)}%`;
+        const totals = data.totals || {};
+        const metrics = [
+          ["Units", formatNumber(totals.units || 0)],
+          ["Beds", formatNumber(totals.beds || 0)],
+          ["Residents", formatNumber(totals.residents || 0)],
+          ["Occupancy", formatPercent(totals.occupancy)],
+          ["Base rent", formatCurrency(totals.baseRent || 0)],
+          ["Care fees", formatCurrency(totals.careFees || 0)],
+          ["Total revenue", formatCurrency(totals.totalRevenue || 0)],
+          ["Total / resident", formatCurrency(totals.averageTotalRevenue || 0)],
+        ];
+        document.getElementById("rentRollTopMetrics").innerHTML = metrics
+          .map(([label, value]) => `<div class="metric-card"><span>${label}</span><strong>${value}</strong></div>`)
+          .join("");
+        renderRentRollUnderwritingTable(data.underwritingSummary || []);
+        renderRentRollSummaryTable("rentRollServiceTable", data.serviceSummary || [], false);
+        renderRentRollSummaryTable("rentRollUnitTable", data.serviceUnitSummary || [], true);
+        renderRentRollDetailTable(data.detailRows || []);
+        document.getElementById("rentRollNotes").innerHTML = (data.notes || [])
+          .map((note) => `<div>• ${escapeHtml(note)}</div>`)
+          .join("");
+        document.getElementById("rentRollMethodology").innerHTML = (data.methodology || [])
+          .map((note) => `<div>• ${escapeHtml(note)}</div>`)
+          .join("");
+      }
+
+      function renderRentRollUnderwritingTable(rows) {
+        document.getElementById("rentRollUnderwritingTable").innerHTML = `
+          <thead>
+            <tr>
+              <th></th>
+              <th>Total Units</th>
+              <th>Residents</th>
+              <th>Occ.</th>
+              <th>Total Rent</th>
+              <th>Total/Res</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td><strong>${escapeHtml(row.label)}</strong></td>
+                <td>${formatNumber(row.units)}</td>
+                <td>${formatNumber(row.residents)}</td>
+                <td>${formatPercent(row.occupancy)}</td>
+                <td>${formatCurrency(row.totalRevenue)}</td>
+                <td>${formatCurrency(row.averageTotalRevenue)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      }
+
+      function renderRentRollSummaryTable(elementId, rows, includeUnitType) {
+        const tableEl = document.getElementById(elementId);
+        tableEl.innerHTML = `
+          <thead>
+            <tr>
+              <th>Service</th>
+              ${includeUnitType ? "<th>Unit type</th>" : ""}
+              <th>Units</th>
+              <th>Beds</th>
+              <th>Residents</th>
+              <th>Occ.</th>
+              <th>Base rent</th>
+              <th>Care fees</th>
+              <th>Total revenue</th>
+              <th>Total / res</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${escapeHtml(row.serviceType)}</td>
+                ${includeUnitType ? `<td>${escapeHtml(row.unitType)}</td>` : ""}
+                <td>${formatNumber(row.units)}</td>
+                <td>${formatNumber(row.beds)}</td>
+                <td>${formatNumber(row.residents)}</td>
+                <td>${formatPercent(row.occupancy)}</td>
+                <td>${formatCurrency(row.baseRent)}</td>
+                <td>${formatCurrency(row.careFees)}</td>
+                <td>${formatCurrency(row.totalRevenue)}</td>
+                <td>${formatCurrency(row.averageTotalRevenue)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      }
+
+      function renderRentRollDetailTable(rows) {
+        document.getElementById("rentRollDetailTable").innerHTML = `
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Unit type</th>
+              <th>Occupancy</th>
+              <th>Unit</th>
+              <th>Resident</th>
+              <th>Units</th>
+              <th>Beds</th>
+              <th>Residents</th>
+              <th>Base rent</th>
+              <th>Care fees</th>
+              <th>Total revenue</th>
+              <th>Confidence</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.slice(0, 100).map((row) => `
+              <tr>
+                <td>${escapeHtml(row.serviceType)}</td>
+                <td>${escapeHtml(row.unitType)}</td>
+                <td>${escapeHtml(row.occupancyType)}</td>
+                <td>${escapeHtml(row.unit || "")}</td>
+                <td>${escapeHtml(row.resident || "")}</td>
+                <td>${formatNumber(row.units)}</td>
+                <td>${formatNumber(row.beds)}</td>
+                <td>${formatNumber(row.residents)}</td>
+                <td>${formatCurrency(row.baseRent)}</td>
+                <td>${formatCurrency(row.careFees)}</td>
+                <td>${formatCurrency(row.totalRevenue)}</td>
+                <td>${Math.round((row.confidence || 0) * 100)}%</td>
+                <td>${escapeHtml(row.notes || "")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+      }
+
+      function downloadRentRollCsv() {
+        if (!state.rentRollResult) return;
+        const rows = state.rentRollResult.detailRows || [];
+        const headers = ["Service Type", "Unit Type", "Occupancy", "Unit", "Resident", "Included In Rollup", "Units", "Beds", "Residents", "Base Rent", "Care Fees", "Total Revenue", "Confidence", "Notes"];
+        const lines = [
+          headers.map(csvEscape).join(","),
+          ...rows.map((row) =>
+            [
+              row.serviceType,
+              row.unitType,
+              row.occupancyType,
+              row.unit || "",
+              row.resident || "",
+              row.includedInRollup ? "Yes" : "No",
+              row.units,
+              row.beds,
+              row.residents,
+              row.baseRent,
+              row.careFees,
+              row.totalRevenue,
+              row.confidence,
+              row.notes || "",
+            ].map(csvEscape).join(","),
+          ),
+        ];
+        const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "senior-housing-rent-roll-analysis.csv";
+        anchor.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function renderTopMetrics(rows) {
+        const oneMile = rows[0] || {};
+        const county = rows.find((row) => row.geographyType === "county") || {};
+        const metrics = [
+          ["1-mile population", formatNumber(oneMile.population)],
+          ["1-mile 75+", formatNumber(oneMile.population75Plus)],
+          ["County population", formatNumber(county.population)],
+          ["1-mile income", formatCurrency(oneMile.medianIncome)],
+        ];
+        document.getElementById("topMetrics").innerHTML = metrics
+          .map(([label, value]) => `<div class="metric-card"><span>${label}</span><strong>${value}</strong></div>`)
+          .join("");
+      }
+
+      function renderTable(rows) {
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Metric</th>
+              ${rows.map((row) => `<th>${escapeHtml(row.geography)}${row.blockGroupsIncluded ? `<br><small>${row.blockGroupsIncluded} block groups</small>` : ""}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${metricRows
+              .map(
+                ([label, render]) => `
+                <tr>
+                  <td>${escapeHtml(label)}</td>
+                  ${rows.map((row) => `<td>${render(row)}</td>`).join("")}
+                </tr>
+              `,
+              )
+              .join("")}
+            ${
+              rows.some((row) => row.note)
+                ? `<tr><td>Notes</td>${rows.map((row) => `<td>${escapeHtml(row.note || "")}</td>`).join("")}</tr>`
+                : ""
+            }
+          </tbody>
+        `;
+      }
+
+      function downloadCsv() {
+        if (!state.result) return;
+        const rows = state.result.rows;
+        const lines = [
+          ["Metric", ...rows.map((row) => row.geography)].map(csvEscape).join(","),
+          ...metricRows.map(([label, , csv]) => [label, ...rows.map((row) => csv(row))].map(csvEscape).join(",")),
+        ];
+        const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "demographics-radius-screener.csv";
+        anchor.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined) return "N/A";
+        return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+      }
+
+      function formatCurrency(value) {
+        if (value === null || value === undefined) return "N/A";
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+      }
+
+      function formatPercent(value) {
+        if (value === null || value === undefined) return "N/A";
+        return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value);
+      }
+
+      function formatGrowth(value) {
+        if (value === null || value === undefined) return '<span style="color: var(--muted)">N/A</span>';
+        const cls = value >= 0 ? "positive" : "negative";
+        return `<span class="${cls}">${value >= 0 ? "+" : ""}${formatPercent(value)}</span>`;
+      }
+
+      function formatCsvPercent(value) {
+        if (value === null || value === undefined) return "";
+        return `${(value * 100).toFixed(2)}%`;
+      }
+
+      function csvEscape(value) {
+        const text = value === null || value === undefined ? "" : String(value);
+        return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+    </script>
+
+    <!-- ===== Floating Deal Review Chat ===== -->
+
+    <!-- Launcher bubble -->
+    <div class="chat-launcher">
+      <span class="chat-bubble-label">Got a new deal in? Walk me through it.</span>
+      <button class="chat-bubble" id="chatBubble" aria-label="Open deal review chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <span class="notify" id="notifyDot"></span>
+      </button>
+    </div>
+
+    <!-- Chat panel -->
+    <div class="chat-panel hidden" id="chatPanel" aria-hidden="true">
+      <div class="chat-head">
+        <div class="avatar">BC</div>
+        <div>
+          <h4>Deal Review Desk</h4>
+          <div class="sub"><span class="dot"></span> Senior housing analyst · reviewing now</div>
+        </div>
+        <div class="head-actions">
+          <button id="resetChat" title="Start over">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </button>
+          <button id="closeChat" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-progress">
+        <span><strong id="progressCount">0</strong> of 11 details</span>
+        <div class="chat-progress-bar"><div class="chat-progress-fill" id="progressFill" style="width:0%"></div></div>
+        <span id="progressLabel">Deal review</span>
+      </div>
+
+      <div class="chat-body" id="chatBody"></div>
+
+      <form class="chat-input" id="chatForm">
+        <textarea id="chatText" rows="1" placeholder="Walk me through the deal…" autocomplete="off"></textarea>
+        <button type="submit" class="send" id="chatSend" aria-label="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+      <div class="chat-footer">Analyst read · preliminary · not a commitment to lend</div>
+    </div>
+
+    <script>
+    /* Deal Review Chat — IIFE to avoid scope conflicts with hub JS */
+    (function () {
+
+      var DEAL_FIELDS = [
+        { key: 'property',  q: "Start with the property — name and address?" },
+        { key: 'source',    q: "Where did it come from — broker or direct from the borrower?", chips: ['Broker','Direct from borrower','Existing relationship','Returning sponsor'] },
+        { key: 'type',      q: "What's the care mix? IL, AL, MC, some combo?", chips: ['IL only','AL only','MC only','IL + AL','AL + MC','IL/AL/MC mix','Skilled nursing'] },
+        { key: 'units',     q: "How big is it — units and beds?" },
+        { key: 'vintage',   q: "When was it built? Any recent capex or renovations worth noting?" },
+        { key: 'occupancy', q: "What's occupancy running, and is the trend up, flat, or down over the last 6-12 months?" },
+        { key: 'operator',  q: "Who's the operator? Any prior history with them, and how many other communities do they run?" },
+        { key: 'noi',       q: "What's the in-place NOI on the T-12? Any one-time items to strip out?" },
+        { key: 'ask',       q: "What's the sponsor asking for — loan size and purchase price or as-is value?" },
+        { key: 'purpose',   q: "And the story — acquisition, refi, bridge? What's the business plan?", chips: ['Acquisition','Refinance','Bridge','Cash-out refi','Value-add / turnaround','Construction'] },
+        { key: 'timing',    q: "When do they need to close, and are they talking to other lenders?" },
+      ];
+
+      var chatState = { idx: -1, payload: {}, done: false };
+      var lastDealPayload = null;
+      var lastFeedback = null;
+      var feedbackFormat = 'scorecard';
+
+      var chatPanel    = document.getElementById('chatPanel');
+      var chatBubble   = document.getElementById('chatBubble');
+      var chatBody     = document.getElementById('chatBody');
+      var chatForm     = document.getElementById('chatForm');
+      var chatText     = document.getElementById('chatText');
+      var notifyDot    = document.getElementById('notifyDot');
+      var progressFill  = document.getElementById('progressFill');
+      var progressCount = document.getElementById('progressCount');
+      var progressLabel = document.getElementById('progressLabel');
+
+      function chatEsc(s) {
+        return String(s).replace(/[&<>"']/g, function(c) {
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+      }
+
+      function openChat() {
+        chatPanel.classList.remove('hidden');
+        chatPanel.setAttribute('aria-hidden', 'false');
+        notifyDot.style.display = 'none';
+        setTimeout(function() { chatText.focus(); }, 250);
+      }
+
+      function closeChat() {
+        chatPanel.classList.add('hidden');
+        chatPanel.setAttribute('aria-hidden', 'true');
+      }
+
+      chatBubble.addEventListener('click', function() {
+        chatPanel.classList.contains('hidden') ? openChat() : closeChat();
+      });
+      document.getElementById('closeChat').addEventListener('click', closeChat);
+      document.getElementById('openChatFromCard').addEventListener('click', openChat);
+      document.getElementById('resetChat').addEventListener('click', function() {
+        if (confirm('Start a new intake? Current conversation will be cleared.')) startConversation();
+      });
+
+      chatText.addEventListener('input', function() {
+        chatText.style.height = 'auto';
+        chatText.style.height = Math.min(chatText.scrollHeight, 120) + 'px';
+      });
+      chatText.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); }
+      });
+      chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var txt = chatText.value.trim();
+        if (!txt) return;
+        handleUserInput(txt);
+        chatText.value = '';
+        chatText.style.height = 'auto';
+      });
+
+      function addTypingBubble() {
+        var t = document.createElement('div');
+        t.className = 'msg bot';
+        t.innerHTML = '<div class="avatar-sm">BC</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+        chatBody.appendChild(t);
+        scrollChat();
+        return t;
+      }
+
+      function addBotMessage(text, opts) {
+        opts = opts || {};
+        var chips = opts.chips || null;
+        var feedbackHtml = opts.feedbackHtml || null;
+        var delay = opts.delay !== undefined ? opts.delay : 600;
+        var typing = addTypingBubble();
+        return new Promise(function(resolve) {
+          setTimeout(function() {
+            typing.remove();
+            if (feedbackHtml) {
+              var wrap = document.createElement('div');
+              wrap.className = 'msg bot';
+              wrap.innerHTML = '<div class="avatar-sm">BC</div><div style="max-width:90%">' + feedbackHtml + '</div>';
+              chatBody.appendChild(wrap);
+            } else {
+              var m = document.createElement('div');
+              m.className = 'msg bot';
+              m.innerHTML = '<div class="avatar-sm">BC</div><div class="bubble">' + text + '</div>';
+              chatBody.appendChild(m);
+            }
+            if (chips && chips.length) {
+              var cwrap = document.createElement('div');
+              cwrap.className = 'quick-replies';
+              chips.forEach(function(c) {
+                var b = document.createElement('button');
+                b.type = 'button'; b.className = 'chip'; b.textContent = c;
+                b.addEventListener('click', function() {
+                  cwrap.querySelectorAll('.chip').forEach(function(x) { x.remove(); });
+                  handleUserInput(c);
+                });
+                cwrap.appendChild(b);
+              });
+              chatBody.appendChild(cwrap);
+            }
+            scrollChat();
+            resolve();
+          }, delay);
+        });
+      }
+
+      function addUserMessage(text) {
+        var m = document.createElement('div');
+        m.className = 'msg user';
+        m.innerHTML = '<div class="bubble">' + chatEsc(text) + '</div>';
+        chatBody.appendChild(m);
+        scrollChat();
+      }
+
+      function scrollChat() { chatBody.scrollTop = chatBody.scrollHeight; }
+
+      async function startConversation() {
+        chatState.idx = -1;
+        chatState.payload = {};
+        chatState.done = false;
+        chatBody.innerHTML = '';
+        updateProgress();
+        await addBotMessage("Hi — I can help you review deal opportunities for Bloomfield Capital. Tell me about the deal request.", { delay: 400 });
+        await addBotMessage("Quick reminder on the box: <strong>$4M–$30M</strong>, senior housing, operating assets only — no ground-up. We want a real operator, a coherent plan, and a basis that makes sense.", { delay: 800 });
+        askNext();
+      }
+
+      async function askNext() {
+        chatState.idx++;
+        if (chatState.idx >= DEAL_FIELDS.length) {
+          chatState.done = true;
+          await finalizeDeal();
+          return;
+        }
+        var f = DEAL_FIELDS[chatState.idx];
+        updateProgress();
+        await addBotMessage(f.q, { chips: f.chips, delay: 500 });
+      }
+
+      async function handleUserInput(txt) {
+        if (chatState.done) {
+          addUserMessage(txt);
+          await handleFollowUp(txt);
+          return;
+        }
+        if (chatState.idx < 0) {
+          addUserMessage(txt);
+          startConversation();
+          return;
+        }
+        var f = DEAL_FIELDS[chatState.idx];
+        chatState.payload[f.key] = txt;
+        addUserMessage(txt);
+        updateProgress();
+        askNext();
+      }
+
+      function updateProgress() {
+        var filled = Object.keys(chatState.payload).length;
+        progressCount.textContent = filled;
+        progressFill.style.width = (filled / DEAL_FIELDS.length * 100) + '%';
+        if (chatState.done) { progressLabel.textContent = 'Read ready'; progressFill.style.width = '100%'; }
+        else if (filled === 0) { progressLabel.textContent = 'Deal review'; }
+        else if (filled < 4) { progressLabel.textContent = 'Property basics'; }
+        else if (filled < 7) { progressLabel.textContent = 'Operator & trend'; }
+        else if (filled < 10) { progressLabel.textContent = 'Numbers & story'; }
+        else { progressLabel.textContent = 'Wrapping up'; }
+      }
+
+      async function finalizeDeal() {
+        updateProgress();
+        await addBotMessage("Alright, let me put it together. One sec.", { delay: 500 });
+        var typing = addTypingBubble();
+        var fb;
+        try { fb = await generateFeedback(chatState.payload); }
+        catch (err) { console.error('[deal-review]', err); fb = fallbackFeedback(); }
+        typing.remove();
+        lastDealPayload = chatState.payload;
+        lastFeedback = fb;
+        renderFeedback(chatState.payload, fb);
+        await addBotMessage("Want to push back on the sponsor on anything, or talk through sizing before we circle up?", { delay: 900 });
+      }
+
+      async function askClaude(prompt) {
+        var r = await fetch('/api/deal-review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: prompt }),
+        });
+        var data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'API error');
+        return data.text;
+      }
+
+      async function generateFeedback(deal) {
+        var prompt = 'You are Shana Weiss, a senior housing analyst at Bloomfield Capital. You are on a quick deal-review call with Nick Coburn, who just brought in a new financing opportunity from a broker or borrower. You are giving Nick your honest, experienced read — colleague-to-colleague, not pitching the borrower.\n\nVoice:\n- Direct, experienced, analyst-at-a-whiteboard tone\n- Never address the user by name or use any first-person name\n- Reference the sponsor/operator/broker in the third person ("the sponsor is asking…", "their operator runs…")\n- No fluff, no marketing language, no "great opportunity" talk\n- Call out what\'s missing and what you\'d want to dig into before IC\n\nBloomfield credit box:\n- Loan size: $4M to $30M\n- All US geographies, senior housing (IL / AL / MC, sometimes SNF)\n- NO ground-up construction\n- Prioritize experienced operators, clear business plan, reasonable basis\n\nDeal Nick just walked through:\n- Property: ' + (deal.property || 'n/a') + '\n- Source: ' + (deal.source || 'n/a') + '\n- Care mix: ' + (deal.type || 'n/a') + '\n- Size: ' + (deal.units || 'n/a') + '\n- Vintage: ' + (deal.vintage || 'n/a') + '\n- Occupancy / trend: ' + (deal.occupancy || 'n/a') + '\n- Operator: ' + (deal.operator || 'n/a') + '\n- In-place NOI / T-12: ' + (deal.noi || 'n/a') + '\n- Ask / basis: ' + (deal.ask || 'n/a') + '\n- Purpose / business plan: ' + (deal.purpose || 'n/a') + '\n- Timing: ' + (deal.timing || 'n/a') + '\n\nReturn ONLY a JSON object (no markdown, no fences) with this shape:\n{\n  "verdict": "green" | "amber" | "red",\n  "verdict_label": "3-6 word verdict (e.g. \'Worth a term sheet\', \'Dig deeper before IC\', \'Pass — outside the box\')",\n  "headline": "one sentence summary, analyst voice, 18-24 words max, no names",\n  "pros": ["2-4 short bullets of what works — analyst observations, not borrower-pitch language"],\n  "cons": ["2-4 short bullets of questions / concerns you\'d want answered"],\n  "flags": ["0-3 hard blockers if any (outside box, ground-up, severe distress without a story)"],\n  "memo": "2-3 paragraph analyst read. Do NOT use any names. Reference the sponsor/operator in third person. Mention strategy, basis vs. in-place, operator depth, and what you\'d want for IC.",\n  "next_steps": ["2-3 concrete asks to take back to the broker/sponsor"]\n}\n\nScore \'red\' if outside the $4M-$30M box, ground-up construction, or clearly un-lendable. \'amber\' for deals you\'d want more detail on before committing a term sheet. \'green\' only when the fit is clean.';
+
+        var raw = await askClaude(prompt);
+        var m = raw.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error('no json in response');
+        return JSON.parse(m[0]);
+      }
+
+      function fallbackFeedback() {
+        return {
+          verdict: 'amber',
+          verdict_label: 'Dig deeper before IC',
+          headline: "Based on what's on the table there's something here, but I'd want a few more data points before we commit.",
+          pros: ['Asset class is in our box', 'Operating asset — not ground-up'],
+          cons: ['Need more on operator track record in this submarket', "Basis vs. in-place yield isn't clear yet", 'Business plan is thin on specifics'],
+          flags: [],
+          memo: "High level this feels workable. Size and asset class are in the box and it's an operating asset, not ground-up.\n\nBefore a term sheet makes sense, want to see the operator's other communities and how they've performed on similar care mixes. Also need to pressure-test basis against recent senior housing comps in the submarket and understand what's driving the in-place number — strip out any one-time items.\n\nCircle back once the OM, rent roll, and T-12 are in from the broker and it can be sharpened up.",
+          next_steps: ["Get the OM + rent roll + T-12 from the broker", "Pull operator's other community list", 'Run comps on the submarket basis']
+        };
+      }
+
+      function verdictText(v) { return v === 'green' ? 'Strong fit' : v === 'amber' ? 'Conditional' : 'Outside the box'; }
+
+      function renderActions(fb) {
+        if (!fb.next_steps || !fb.next_steps.length) return '';
+        var btns = fb.next_steps.map(function(s) {
+          var esc = chatEsc(s).replace(/'/g, "\\'");
+          return '<button type="button" class="chip" onclick="window.__dealChatFollowUp(\'' + esc + '\')">' + chatEsc(s) + '</button>';
+        }).join('');
+        return '<div class="feedback-actions">' + btns + '</div>';
+      }
+
+      function renderScorecard(deal, fb) {
+        var letter = fb.verdict === 'green' ? '✓' : fb.verdict === 'amber' ? '!' : '×';
+        var pros = (fb.pros || []).map(function(p) { return '<li>' + chatEsc(p) + '</li>'; }).join('');
+        var cons = (fb.cons || []).map(function(p) { return '<li>' + chatEsc(p) + '</li>'; }).join('');
+        var flags = (fb.flags || []).map(function(p) { return '<li>' + chatEsc(p) + '</li>'; }).join('');
+        return '<div class="feedback">' +
+          '<div class="score-head">' +
+            '<div class="score-dot ' + fb.verdict + '">' + letter + '</div>' +
+            '<div class="score-label">' + chatEsc(fb.verdict_label || verdictText(fb.verdict)) + '<small>' + chatEsc(fb.headline || '') + '</small></div>' +
+          '</div>' +
+          '<div class="feedback-sections">' +
+            (pros ? '<div class="feedback-section pros"><h5>What works</h5><ul>' + pros + '</ul></div>' : '') +
+            (cons ? '<div class="feedback-section cons"><h5>What I\'d want to dig into</h5><ul>' + cons + '</ul></div>' : '') +
+            (flags ? '<div class="feedback-section flags"><h5>Hard flags</h5><ul>' + flags + '</ul></div>' : '') +
+          '</div>' +
+          renderActions(fb) +
+        '</div>';
+      }
+
+      function renderMemo(deal, fb) {
+        var paragraphs = (fb.memo || '').split(/\n\n+/).map(function(p) { return '<p>' + chatEsc(p) + '</p>'; }).join('');
+        var sub = [deal.type, deal.units, deal.ask].filter(Boolean).join(' · ');
+        return '<div class="feedback memo">' +
+          '<div class="memo-head">' +
+            '<span class="stamp ' + fb.verdict + '">' + (fb.verdict || '').toUpperCase() + ' · ' + chatEsc(fb.verdict_label || verdictText(fb.verdict)) + '</span>' +
+            '<h6>' + chatEsc(deal.property || 'Deal memo') + '</h6>' +
+            '<div class="sub">' + chatEsc(sub) + '</div>' +
+          '</div>' +
+          '<div class="memo-body">' + (paragraphs || '<p>' + chatEsc(fb.headline || '') + '</p>') + '</div>' +
+          '<div class="memo-foot"><span>Bloomfield · Deal Review</span><span>' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</span></div>' +
+          renderActions(fb) +
+        '</div>';
+      }
+
+      function renderSummary(deal, fb) {
+        var inlines = '';
+        if ((fb.pros && fb.pros.length) || (fb.cons && fb.cons.length) || (fb.flags && fb.flags.length)) {
+          inlines = '<div style="margin-top:10px;display:grid;gap:4px;font-size:13px;color:var(--muted);line-height:1.5;">' +
+            (fb.pros || []).slice(0, 2).map(function(p) { return '<div>✓ ' + chatEsc(p) + '</div>'; }).join('') +
+            (fb.cons || []).slice(0, 2).map(function(p) { return '<div style="color:#b45309">! ' + chatEsc(p) + '</div>'; }).join('') +
+            (fb.flags || []).slice(0, 2).map(function(p) { return '<div style="color:var(--red)">⚠ ' + chatEsc(p) + '</div>'; }).join('') +
+          '</div>';
+        }
+        var chips = fb.next_steps && fb.next_steps.length
+          ? '<div class="quick-replies" style="margin-left:0;margin-top:8px;">' +
+              fb.next_steps.map(function(s) { return '<span class="chip" style="cursor:default">' + chatEsc(s) + '</span>'; }).join('') +
+            '</div>'
+          : '';
+        return '<div class="feedback summary">' +
+          '<div style="padding:10px 13px;background:#fff;border:1px solid var(--line);border-radius:16px 16px 16px 4px;">' +
+            '<span class="summary-verdict ' + fb.verdict + '"><span class="score-dot-sm"></span> ' + chatEsc(fb.verdict_label || verdictText(fb.verdict)) + '</span>' +
+            '<div style="font-size:14px;line-height:1.55;">' + chatEsc(fb.headline || '') + '</div>' +
+            inlines +
+          '</div>' +
+          chips +
+        '</div>';
+      }
+
+      function renderFeedback(deal, fb) {
+        chatBody.querySelectorAll('.feedback-wrapper').forEach(function(n) { n.remove(); });
+        var wrap = document.createElement('div');
+        wrap.className = 'msg bot feedback-wrapper';
+        var html = '';
+        if (feedbackFormat === 'memo') html = renderMemo(deal, fb);
+        else if (feedbackFormat === 'summary') html = renderSummary(deal, fb);
+        else html = renderScorecard(deal, fb);
+        wrap.innerHTML = '<div class="avatar-sm">BC</div><div style="max-width:92%">' + html + '</div>';
+        chatBody.appendChild(wrap);
+        scrollChat();
+      }
+
+      async function handleFollowUp(txt) {
+        var prompt = 'You are a senior housing analyst at Bloomfield Capital continuing a quick deal-review chat. Stay in character: direct, experienced, colleague-to-colleague. Never use any names — do not address the user by name and do not sign off with a name. Reference the sponsor/operator/broker in third person.\n\nThe deal:\n' + JSON.stringify(lastDealPayload, null, 2) + '\n\nYour earlier read: ' + JSON.stringify(lastFeedback) + '\n\nUser just said: "' + txt + '"\n\nReply in 2-4 sentences. Analyst voice, not pitch voice. No names. No markdown, no JSON.';
+
+        var typing = addTypingBubble();
+        try {
+          var reply = await askClaude(prompt);
+          typing.remove();
+          await addBotMessage(chatEsc(reply.trim()), { delay: 0 });
+        } catch (e) {
+          typing.remove();
+          await addBotMessage("Lost connection to the scoring engine. Drop what you've got in a note and circle back in a bit.", { delay: 0 });
+        }
+      }
+
+      window.__dealChatFollowUp = function(txt) {
+        if (!chatState.done) return;
+        addUserMessage(txt);
+        handleFollowUp(txt);
+      };
+
+      startConversation();
+
+    })();
+    </script>
+  </body>
+</html>
