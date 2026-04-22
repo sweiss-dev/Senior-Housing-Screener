@@ -4,17 +4,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "rm -rf dist && mkdir -p dist/public && cp index.html dist/public/index.html && cp -R sales-comp dist/public/sales-comp",
+    "build": "rm -rf dist && mkdir -p dist/public && cp index.html dist/public/index.html && cp -R sales-comp dist/public/sales-comp && cp -R deal-intake dist/public/deal-intake && cp -R deals dist/public/deals",
     "start": "python3 -m http.server 3000"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
+    "@vercel/blob": "^0.27.0",
+    "@vercel/postgres": "^0.10.0",
+    "formidable": "^3.5.1",
+    "nanoid": "^5.0.7",
     "pdf-parse": "^2.4.5",
     "pdfkit": "^0.18.0",
     "pngjs": "^7.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/formidable": "^3.4.5",
+    "@types/pdf-parse": "^1.1.4",
     "@types/pdfkit": "^0.17.6",
     "@types/pngjs": "^6.0.5",
     "@vercel/node": "^5.7.11",

@@ -13,6 +13,22 @@
   },
   "rewrites": [
     {
+      "source": "/deal-intake",
+      "destination": "/deal-intake/index.html"
+    },
+    {
+      "source": "/deal-intake/",
+      "destination": "/deal-intake/index.html"
+    },
+    {
+      "source": "/deals",
+      "destination": "/deals/index.html"
+    },
+    {
+      "source": "/deals/",
+      "destination": "/deals/index.html"
+    },
+    {
       "source": "/sales-comp",
       "destination": "/sales-comp/index.html"
     },

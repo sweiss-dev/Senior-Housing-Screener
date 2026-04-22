@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deal Intake — Bloomfield Capital</title>
+    <meta name="description" content="Submit a senior housing deal for instant analyst-grade screening at Bloomfield Capital." />
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
+    <!-- Marked for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f3f6fa;
+        --card: #ffffff;
+        --card-soft: #f8fafc;
+        --ink: #111827;
+        --muted: #627083;
+        --line: #dbe3ee;
+        --blue: #086aa6;
+        --blue-dark: #07547f;
+        --blue-soft: #eef4fa;
+        --shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.18);
+        --green: #087f5b;
+        --amber: #b45309;
+        --red: #b42318;
+        --green-bg: rgba(8, 127, 91, 0.09);
+        --amber-bg: rgba(180, 83, 9, 0.09);
+        --red-bg: rgba(180, 35, 24, 0.09);
+        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        --radius: 18px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top left, rgba(8, 106, 166, 0.12), transparent 34rem), var(--bg);
+        color: var(--ink);
+        font-family: Satoshi, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: -0.01em;
+      }
+      button, input, select, textarea { font: inherit; }
+      .shell {
+        width: min(1100px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 64px;
+      }
+
+      /* ── Topbar ── */
+      .topbar {
+        display: flex; justify-content: space-between; gap: 24px;
+        align-items: flex-start;
+        background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+        box-shadow: var(--shadow); border-radius: var(--radius);
+        padding: 22px; margin-bottom: 32px;
+      }
+      .brand { display: flex; gap: 12px; align-items: center; color: var(--blue); font-weight: 700; font-size: 15px; }
+      .back-link { color: var(--blue); text-decoration: none; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+      .back-link:hover { color: var(--blue-dark); }
+      h1 { margin: 0 0 4px; font-size: clamp(22px, 3vw, 32px); line-height: 1.1; letter-spacing: -0.03em; }
+      .lede { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+      /* ── Buttons ── */
+      .button {
+        border: 0; border-radius: 12px; padding: 11px 18px;
+        background: var(--blue); color: #fff; font-weight: 700; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center;
+        justify-content: center; gap: 8px; font-size: 14px; transition: background 0.15s;
+      }
+      .button:hover { background: var(--blue-dark); }
+      .button.secondary {
+        background: var(--blue-soft); color: var(--blue);
+        border: 1px solid #d6e5f1;
+      }
+      .button.secondary:hover { background: #e3eef7; }
+      .button[disabled] { opacity: 0.55; cursor: not-allowed; }
+      .button.large { padding: 14px 24px; font-size: 15px; border-radius: 14px; }
+
+      /* ── Tabs ── */
+      .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--card-soft); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
+      .tab {
+        flex: 1; border: 0; background: transparent; cursor: pointer; font-weight: 600;
+        padding: 10px 12px; border-radius: 11px; color: var(--muted); font-size: 14px; transition: all 0.15s;
+      }
+      .tab.active { background: var(--blue); color: #fff; }
+      .tab:hover:not(.active) { background: var(--line); color: var(--ink); }
+
+      /* ── Panel ── */
+      .panel {
+        background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+        box-shadow: var(--shadow); border-radius: var(--radius); padding: 28px;
+      }
+
+      /* ── Input ── */
+      .input {
+        width: 100%; border: 1px solid #c9d4e3; border-radius: 12px;
+        background: #fff; color: var(--ink); padding: 12px 13px; outline: none;
+        font-size: 14px;
+      }
+      .input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,106,166,0.14); }
+      textarea.input { resize: vertical; min-height: 200px; line-height: 1.6; }
+
+      /* ── Drop zone ── */
+      .dropzone {
+        border: 2px dashed #c9d4e3; border-radius: 16px;
+        background: #fbfdff; padding: 48px 24px; text-align: center;
+        cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      }
+      .dropzone:hover, .dropzone.drag-over { border-color: var(--blue); background: var(--blue-soft); }
+      .dropzone-icon { font-size: 36px; display: block; margin-bottom: 12px; }
+      .dropzone p { margin: 4px 0; color: var(--muted); font-size: 14px; }
+      .dropzone strong { color: var(--ink); }
+      .file-list { margin-top: 14px; display: grid; gap: 8px; }
+      .file-item {
+        display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+        background: var(--card-soft); border: 1px solid var(--line); border-radius: 12px;
+        font-size: 13px;
+      }
+      .file-item span { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .file-item .remove { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 16px; padding: 0 4px; }
+      .file-item .remove:hover { color: var(--red); }
+
+      /* ── Forward instructions ── */
+      .forward-box {
+        background: var(--blue-soft); border: 1px solid #d6e5f1; border-radius: 16px;
+        padding: 20px; margin-bottom: 16px;
+      }
+      .forward-email {
+        display: flex; align-items: center; gap: 10px;
+        background: #fff; border: 1px solid var(--line); border-radius: 12px;
+        padding: 12px 16px; font-size: 14px; font-weight: 700; color: var(--ink);
+        margin: 12px 0;
+      }
+      .forward-email span { flex: 1; }
+      .tag { display: inline-block; background: #e1edf7; color: var(--blue-dark); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 6px; }
+
+      /* ── Loading state ── */
+      .loading-state { display: none; text-align: center; padding: 56px 24px; }
+      .loading-state.visible { display: block; }
+      .spinner {
+        width: 48px; height: 48px; border-radius: 50%;
+        border: 3px solid rgba(8,106,166,0.15);
+        border-top-color: var(--blue);
+        animation: spin 0.85s linear infinite;
+        margin: 0 auto 24px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .phase-text { font-size: 15px; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+      .phase-sub { font-size: 13px; color: var(--muted); margin: 0; }
+      .progress-bar { height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 20px auto; max-width: 280px; }
+      .progress-fill { height: 100%; background: var(--blue); border-radius: 999px; transition: width 1.2s ease; }
+
+      /* ── Results view ── */
+      #resultsView { display: none; }
+      #resultsView.visible { display: block; }
+
+      /* ── Verdict card ── */
+      .verdict-card {
+        border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+        border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow);
+        display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;
+      }
+      .verdict-pill {
+        display: flex; align-items: center; gap: 10px; border-radius: 14px;
+        padding: 12px 18px; font-size: 22px; font-weight: 700; flex-shrink: 0;
+        letter-spacing: -0.02em;
+      }
+      .verdict-pill.green { background: var(--green-bg); color: var(--green); }
+      .verdict-pill.amber { background: var(--amber-bg); color: var(--amber); }
+      .verdict-pill.red { background: var(--red-bg); color: var(--red); }
+      .verdict-pill .dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+      .verdict-meta { flex: 1; min-width: 200px; }
+      .verdict-meta h2 { font-size: 20px; margin: 0 0 6px; letter-spacing: -0.02em; }
+      .verdict-meta p { margin: 0 0 10px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+      .deal-basics { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+      .basic-tag { background: var(--card-soft); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--ink); }
+      .credit-box-row { margin-top: 10px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; }
+      .cb-check { display: flex; align-items: center; gap: 5px; }
+      .cb-check .icon-ok { color: var(--green); }
+      .cb-check .icon-no { color: var(--red); }
+
+      /* ── Metrics strip ── */
+      .metrics-strip {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+      }
+      .metric-card {
+        background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+        box-shadow: var(--shadow); border-radius: 14px; padding: 16px;
+      }
+      .metric-card .label { display: block; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+      .metric-card .value { display: block; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+
+      /* ── Module launchpad ── */
+      .launchpad-section h3 { font-size: 16px; margin: 0 0 14px; }
+      .launchpad-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;
+      }
+      .module-btn {
+        display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+        padding: 18px 20px; background: #fff; border: 1.5px solid var(--line);
+        border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.15s;
+      }
+      .module-btn:hover { border-color: var(--blue); background: var(--blue-soft); }
+      .module-btn .mod-icon { font-size: 22px; }
+      .module-btn .mod-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+      .module-btn .mod-desc { font-size: 12px; color: var(--muted); }
+      .module-btn:hover .mod-name { color: var(--blue); }
+
+      /* ── Status & actions bar ── */
+      .actions-bar {
+        display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+        margin-bottom: 24px; padding: 16px 20px;
+        background: var(--card-soft); border: 1px solid var(--line); border-radius: 14px;
+      }
+      .actions-bar label { font-size: 13px; font-weight: 600; color: var(--muted); }
+      .status-select {
+        border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
+        background: #fff; font-size: 14px; font-weight: 600; cursor: pointer; outline: none;
+      }
+      .status-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,106,166,0.14); }
+
+      /* ── Memo section ── */
+      .memo-section { background: rgba(255,255,255,0.92); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: var(--radius); padding: 28px; }
+      .memo-section h3 { font-size: 16px; margin: 0 0 18px; }
+      .memo-body { font-size: 14px; line-height: 1.75; color: var(--ink); }
+      .memo-body h2 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; color: var(--blue-dark); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+      .memo-body h3 { font-size: 14px; font-weight: 700; margin: 18px 0 6px; }
+      .memo-body p { margin: 0 0 12px; }
+      .memo-body table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+      .memo-body th { background: #f8fafc; text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+      .memo-body td { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+      .memo-body tr:last-child td { border-bottom: 0; }
+      .memo-body ul, .memo-body ol { margin: 0 0 12px; padding-left: 20px; }
+      .memo-body li { margin-bottom: 4px; }
+
+      /* ── Next steps ── */
+      .next-steps { margin-top: 20px; padding: 18px 20px; background: var(--blue-soft); border: 1px solid #d6e5f1; border-radius: 14px; }
+      .next-steps h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--blue); margin: 0 0 12px; }
+      .next-steps ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+      .next-steps li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+      .next-steps li::before { content: "→"; color: var(--blue); font-weight: 700; flex-shrink: 0; }
+
+      /* ── Error/empty ── */
+      .error-msg { background: rgba(180,35,24,0.07); border: 1px solid rgba(180,35,24,0.2); border-radius: 12px; padding: 14px 16px; color: var(--red); font-size: 14px; margin-top: 14px; display: none; }
+      .error-msg.visible { display: block; }
+
+      /* ── Loader inline ── */
+      .loader { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff; animation: spin 0.85s linear infinite; }
+
+      /* ── Responsive ── */
+      @media (max-width: 740px) {
+        .metrics-strip { grid-template-columns: repeat(2, 1fr); }
+        .launchpad-grid { grid-template-columns: 1fr; }
+        .topbar { flex-direction: column; }
+      }
+      @media (max-width: 480px) {
+        .metrics-strip { grid-template-columns: 1fr; }
+      }
+
+      /* ── Tab panes ── */
+      .tab-pane { display: none; }
+      .tab-pane.active { display: block; }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div>
+          <div class="brand">
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <circle cx="20" cy="20" r="15" stroke="currentColor" stroke-width="2" opacity=".25"/>
+              <circle cx="20" cy="20" r="9" stroke="currentColor" stroke-width="2" opacity=".55"/>
+              <circle cx="20" cy="20" r="3" fill="currentColor"/>
+              <path d="M20 5v6M20 29v6M5 20h6M29 20h6" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Bloomfield Capital
+          </div>
+          <h1>Deal Intake</h1>
+          <p class="lede">Submit a senior housing deal — paste a teaser, upload PDFs or rent rolls, or forward an email. Claude runs an instant analyst read.</p>
+        </div>
+        <a href="/" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back to hub
+        </a>
+      </header>
+
+      <!-- Intake panel -->
+      <div id="intakeSection">
+        <div class="panel">
+          <div class="tabs">
+            <button class="tab active" data-tab="paste" type="button">✏️ Paste text</button>
+            <button class="tab" data-tab="upload" type="button">📎 Upload files</button>
+            <button class="tab" data-tab="forward" type="button">📧 Email forward</button>
+          </div>
+
+          <!-- Paste tab -->
+          <div class="tab-pane active" id="pane-paste">
+            <textarea
+              class="input"
+              id="pasteText"
+              rows="12"
+              placeholder="Paste email body, broker teaser, OM highlights, or any deal text here…&#10;&#10;Examples: &quot;$18mm ask on 95-unit AL/MC in Scottsdale, AZ. T12 NOI $1.1mm, Year 1 $1.4mm. Discovery operator.&quot;"
+            ></textarea>
+            <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+              <button class="button large" id="analyzePasteBtn" type="button">
+                <span>Analyze deal</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload tab -->
+          <div class="tab-pane" id="pane-upload">
+            <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drop PDF or XLSX files here">
+              <span class="dropzone-icon">📄</span>
+              <strong>Drop PDF or Excel files here</strong>
+              <p>Or click to browse — OM, rent roll, financial summary</p>
+              <p style="font-size: 12px; margin-top: 8px;">PDF, XLSX, XLS, CSV accepted · up to 20 MB total</p>
+              <input type="file" id="fileInput" multiple accept=".pdf,.xlsx,.xls,.xlsm,.xlsb,.csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" style="display:none" />
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+              <button class="button large" id="analyzeUploadBtn" type="button">
+                <span>Analyze deal</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Forward tab -->
+          <div class="tab-pane" id="pane-forward">
+            <div class="forward-box">
+              <p style="margin:0 0 6px; font-size: 14px; font-weight: 700; color: var(--blue);">📧 Forward deal emails directly to Bloomfield's intake pipeline</p>
+              <p style="margin:0; color: var(--muted); font-size: 13px;">DNS setup pending. Once configured, any email forwarded to this address will be automatically analyzed and added to your pipeline.</p>
+              <div class="forward-email">
+                <span id="forwardEmail">deals@intake.bloomfieldcapital.com</span>
+                <button class="button secondary" type="button" id="copyEmailBtn" style="padding: 7px 12px; font-size: 12px;">Copy</button>
+              </div>
+              <span class="tag">DNS setup pending</span>
+            </div>
+            <div style="border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: #fff;">
+              <p style="margin: 0 0 12px; font-size: 14px; font-weight: 700;">Setup instructions</p>
+              <ol style="margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 14px; color: var(--muted); line-height: 1.6;">
+                <li>In SendGrid: Settings → Inbound Parse → Add Host &amp; URL<br>
+                  <code style="background: var(--card-soft); padding: 2px 6px; border-radius: 6px; font-size: 12px;">Host: intake.bloomfieldcapital.com &nbsp; URL: https://&lt;app&gt;.vercel.app/api/deal-inbox</code></li>
+                <li>Add MX record on <code style="background: var(--card-soft); padding: 2px 6px; border-radius: 6px; font-size: 12px;">intake.bloomfieldcapital.com</code> pointing to <code style="background: var(--card-soft); padding: 2px 6px; border-radius: 6px; font-size: 12px;">mx.sendgrid.net</code> (priority 10)</li>
+                <li>Instruct brokers to forward teasers to <code style="background: var(--card-soft); padding: 2px 6px; border-radius: 6px; font-size: 12px;">deals@intake.bloomfieldcapital.com</code></li>
+                <li>Deals will appear in the <a href="/deals" style="color: var(--blue); font-weight: 600;">Pipeline dashboard</a> within ~60 seconds</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="error-msg" id="errorMsg"></div>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div class="loading-state panel" id="loadingState" style="margin-top: 24px;">
+        <div class="spinner"></div>
+        <p class="phase-text" id="phaseText">Initializing…</p>
+        <p class="phase-sub" id="phaseSub">This typically takes 15–30 seconds</p>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 5%"></div></div>
+      </div>
+
+      <!-- Results view -->
+      <div id="resultsView" style="margin-top: 24px;">
+
+        <!-- Verdict card -->
+        <div class="verdict-card">
+          <div class="verdict-pill" id="verdictPill">
+            <span class="dot"></span>
+            <span id="verdictText">—</span>
+          </div>
+          <div class="verdict-meta">
+            <h2 id="verdictLabel">—</h2>
+            <p id="headlineText">—</p>
+            <div class="deal-basics" id="dealBasics"></div>
+            <div class="credit-box-row" id="creditBoxRow"></div>
+          </div>
+        </div>
+
+        <!-- Metrics strip -->
+        <div class="metrics-strip" id="metricsStrip">
+          <div class="metric-card"><span class="label">Ask / Unit</span><strong class="value" id="mAskPerUnit">—</strong></div>
+          <div class="metric-card"><span class="label">Going-in DY</span><strong class="value" id="mGoingInDy">—</strong></div>
+          <div class="metric-card"><span class="label">Stabilized DY</span><strong class="value" id="mStabDy">—</strong></div>
+          <div class="metric-card"><span class="label">Occupancy</span><strong class="value" id="mOccupancy">—</strong></div>
+        </div>
+
+        <!-- Module launchpad -->
+        <div class="launchpad-section panel" style="margin-bottom: 20px;">
+          <h3>Run a deeper analysis</h3>
+          <div class="launchpad-grid">
+            <button class="module-btn" data-module="rent-roll" type="button">
+              <span class="mod-icon">▦</span>
+              <span class="mod-name">Run Rent Roll →</span>
+              <span class="mod-desc">Analyze unit mix, occupancy, and revenue by service type</span>
+            </button>
+            <button class="module-btn" data-module="demographics" type="button">
+              <span class="mod-icon">◎</span>
+              <span class="mod-name">Pull Demographics →</span>
+              <span class="mod-desc">1-, 3-, 5-mile senior population and income radii</span>
+            </button>
+            <button class="module-btn" data-module="sales-comp" type="button">
+              <span class="mod-icon">↗</span>
+              <span class="mod-name">Find Sales Comps →</span>
+              <span class="mod-desc">Comparable senior housing transactions near this asset</span>
+            </button>
+            <button class="module-btn" data-module="memo-pdf" type="button">
+              <span class="mod-icon">📄</span>
+              <span class="mod-name">Generate Memo PDF →</span>
+              <span class="mod-desc">Export a formatted analyst memo with comps map</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions bar -->
+        <div class="actions-bar">
+          <label for="statusSelect">Pipeline status:</label>
+          <select class="status-select" id="statusSelect">
+            <option value="new">New</option>
+            <option value="reviewing">Reviewing</option>
+            <option value="termsheet">Term Sheet</option>
+            <option value="passed">Passed</option>
+            <option value="closed">Closed</option>
+          </select>
+          <button class="button secondary" type="button" id="shareBtn">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.8"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.8"/><path d="M6 7l4-2M6 9l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Share deal
+          </button>
+          <button class="button secondary" type="button" id="newIntakeBtn" style="margin-left: auto;">
+            + New intake
+          </button>
+          <a href="/deals" class="button secondary">Pipeline →</a>
+        </div>
+
+        <!-- Full memo -->
+        <div class="memo-section">
+          <h3>Analyst Memo</h3>
+          <div class="memo-body" id="memoBody"></div>
+          <div class="next-steps" id="nextStepsBox" style="display:none;">
+            <h4>Diligence asks</h4>
+            <ul id="nextStepsList"></ul>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <script>
+    // ──────────────────────────────────────────────────────────────────
+    // State
+    // ──────────────────────────────────────────────────────────────────
+    let currentDealId = null;
+    let uploadedFiles = [];
+    const phases = [
+      { text: "Parsing files…",        sub: "Extracting text from PDFs and spreadsheets",   pct: 15 },
+      { text: "Extracting fields…",    sub: "Identifying property, sponsor, and NOI data",   pct: 40 },
+      { text: "Running analyst read…", sub: "Claude is writing the analyst memo",             pct: 70 },
+      { text: "Finalizing results…",   sub: "Computing debt yield and LTV sensitivity",       pct: 92 },
+    ];
+    let phaseIdx = 0;
+    let phaseTimer = null;
+
+    // ──────────────────────────────────────────────────────────────────
+    // Tabs
+    // ──────────────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('pane-' + tab).classList.add('active');
+      });
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // File upload / drag-drop
+    // ──────────────────────────────────────────────────────────────────
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList  = document.getElementById('fileList');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault(); dropzone.classList.remove('drag-over');
+      addFiles([...e.dataTransfer.files]);
+    });
+    fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+    function addFiles(files) {
+      for (const f of files) {
+        if (!uploadedFiles.find(x => x.name === f.name && x.size === f.size)) {
+          uploadedFiles.push(f);
+        }
+      }
+      renderFileList();
+    }
+
+    function renderFileList() {
+      fileList.innerHTML = uploadedFiles.map((f, i) => `
+        <div class="file-item">
+          <span>${f.name.length > 50 ? f.name.slice(0,47)+'…' : f.name}</span>
+          <span style="color:var(--muted);font-size:12px;">${(f.size/1024/1024).toFixed(1)} MB</span>
+          <button class="remove" data-idx="${i}" type="button" aria-label="Remove">✕</button>
+        </div>
+      `).join('');
+      fileList.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          uploadedFiles.splice(Number(btn.dataset.idx), 1);
+          renderFileList();
+        });
+      });
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Copy email
+    // ──────────────────────────────────────────────────────────────────
+    document.getElementById('copyEmailBtn').addEventListener('click', () => {
+      const addr = document.getElementById('forwardEmail').textContent;
+      navigator.clipboard.writeText(addr).then(() => {
+        const btn = document.getElementById('copyEmailBtn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Analyze buttons
+    // ──────────────────────────────────────────────────────────────────
+    document.getElementById('analyzePasteBtn').addEventListener('click', () => {
+      const text = document.getElementById('pasteText').value.trim();
+      if (!text) { showError('Please paste some deal text before analyzing.'); return; }
+      analyzePaste(text);
+    });
+
+    document.getElementById('analyzeUploadBtn').addEventListener('click', () => {
+      if (!uploadedFiles.length) { showError('Please add at least one file before analyzing.'); return; }
+      analyzeUpload();
+    });
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.classList.add('visible');
+      setTimeout(() => el.classList.remove('visible'), 6000);
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Phase progress
+    // ──────────────────────────────────────────────────────────────────
+    function startPhases() {
+      phaseIdx = 0;
+      showPhase(0);
+      phaseTimer = setInterval(() => {
+        phaseIdx = Math.min(phaseIdx + 1, phases.length - 1);
+        showPhase(phaseIdx);
+      }, 6000);
+    }
+
+    function showPhase(idx) {
+      const p = phases[idx];
+      document.getElementById('phaseText').textContent = p.text;
+      document.getElementById('phaseSub').textContent = p.sub;
+      document.getElementById('progressFill').style.width = p.pct + '%';
+    }
+
+    function stopPhases() {
+      clearInterval(phaseTimer);
+      document.getElementById('progressFill').style.width = '100%';
+    }
+
+    function showLoading() {
+      document.getElementById('intakeSection').style.display = 'none';
+      document.getElementById('loadingState').classList.add('visible');
+      document.getElementById('resultsView').classList.remove('visible');
+      startPhases();
+    }
+
+    function hideLoading() {
+      stopPhases();
+      document.getElementById('loadingState').classList.remove('visible');
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // API calls
+    // ──────────────────────────────────────────────────────────────────
+    async function analyzePaste(text) {
+      showLoading();
+      try {
+        const resp = await fetch('/api/deal-intake', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pasted_text: text, source: 'paste' }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Intake failed');
+        hideLoading();
+        renderResults(data);
+      } catch (err) {
+        hideLoading();
+        document.getElementById('intakeSection').style.display = '';
+        showError(err.message || 'Something went wrong. Please try again.');
+      }
+    }
+
+    async function analyzeUpload() {
+      showLoading();
+      try {
+        const form = new FormData();
+        form.set('source', 'upload');
+        for (const f of uploadedFiles) form.append('files[]', f);
+        const pasteText = document.getElementById('pasteText').value.trim();
+        if (pasteText) form.set('pasted_text', pasteText);
+
+        const resp = await fetch('/api/deal-intake', { method: 'POST', body: form });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Intake failed');
+        hideLoading();
+        renderResults(data);
+      } catch (err) {
+        hideLoading();
+        document.getElementById('intakeSection').style.display = '';
+        showError(err.message || 'Something went wrong. Please try again.');
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Render results
+    // ──────────────────────────────────────────────────────────────────
+    function fmt$( n ) { if (n == null) return '—'; return '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0}); }
+    function fmtPct( n ) { if (n == null) return '—'; return (n * 100).toFixed(2) + '%'; }
+    function fmtPctRaw( n ) { if (n == null) return '—'; return Number(n).toFixed(2) + '%'; }
+
+    function renderResults(data) {
+      currentDealId = data.deal_id;
+      const deal = data.deal;
+      const computed = data.computed || {};
+      const next_steps = data.next_steps || [];
+
+      // Update URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.set('id', currentDealId);
+      history.replaceState({}, '', url.toString());
+
+      // Verdict
+      const verdict = deal.verdict || 'amber';
+      const pill = document.getElementById('verdictPill');
+      pill.className = 'verdict-pill ' + verdict;
+      document.getElementById('verdictText').textContent = verdict.toUpperCase();
+      document.getElementById('verdictLabel').textContent = deal.verdict_label || '—';
+      document.getElementById('headlineText').textContent = deal.headline || '—';
+
+      // Deal basics
+      const basics = document.getElementById('dealBasics');
+      const basicsData = [
+        deal.property_name,
+        [deal.city, deal.state].filter(Boolean).join(', '),
+        deal.units ? deal.units + ' units' : null,
+        deal.ask_amount ? fmt$(deal.ask_amount) + ' ask' : null,
+        deal.purpose,
+      ].filter(Boolean);
+      basics.innerHTML = basicsData.map(b => `<span class="basic-tag">${b}</span>`).join('');
+
+      // Credit box fit
+      const cbFit = computed.credit_box_fit;
+      if (cbFit) {
+        const checks = [
+          { ok: cbFit.in_size_range,      label: 'In size range' },
+          { ok: cbFit.is_senior_housing,  label: 'Senior housing' },
+          { ok: cbFit.is_not_construction, label: 'Not construction' },
+        ];
+        document.getElementById('creditBoxRow').innerHTML =
+          checks.map(c => `<span class="cb-check">
+            <span class="${c.ok ? 'icon-ok' : 'icon-no'}">${c.ok ? '✓' : '✗'}</span>
+            <span>${c.label}</span>
+          </span>`).join('') +
+          (cbFit.notes ? `<span style="color:var(--muted);font-size:13px;">— ${cbFit.notes}</span>` : '');
+      }
+
+      // Metrics strip
+      const perUnit = computed.per_unit || {};
+      const debtYield = computed.debt_yield || [];
+      const goingIn = debtYield[0];
+      const stab = debtYield.find(r => r.period && r.period.toLowerCase().includes('stab'));
+
+      if (deal.units && deal.ask_amount) {
+        document.getElementById('mAskPerUnit').textContent = fmt$(deal.ask_amount / deal.units) + '/unit';
+      }
+      if (goingIn) document.getElementById('mGoingInDy').textContent = fmtPctRaw(goingIn.dy_total);
+      if (stab) document.getElementById('mStabDy').textContent = fmtPctRaw(stab.dy_total);
+      document.getElementById('mOccupancy').textContent = deal.occupancy || '—';
+
+      // Memo
+      const memoMd = deal.memo_markdown || '';
+      if (memoMd && window.marked) {
+        document.getElementById('memoBody').innerHTML = window.marked.parse(memoMd);
+      } else {
+        document.getElementById('memoBody').textContent = memoMd;
+      }
+
+      // Next steps
+      if (next_steps.length) {
+        const box = document.getElementById('nextStepsBox');
+        box.style.display = '';
+        document.getElementById('nextStepsList').innerHTML = next_steps.map(s => `<li>${s}</li>`).join('');
+      }
+
+      // Status select
+      document.getElementById('statusSelect').value = deal.status || 'new';
+
+      // Show results
+      document.getElementById('resultsView').classList.add('visible');
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Status update
+    // ──────────────────────────────────────────────────────────────────
+    document.getElementById('statusSelect').addEventListener('change', async (e) => {
+      if (!currentDealId) return;
+      await fetch('/api/deal-update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentDealId, status: e.target.value }),
+      });
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Share button
+    // ──────────────────────────────────────────────────────────────────
+    document.getElementById('shareBtn').addEventListener('click', () => {
+      const url = window.location.origin + '/deal-intake/?id=' + currentDealId;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('shareBtn');
+        const orig = btn.innerHTML;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      });
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // New intake button
+    // ──────────────────────────────────────────────────────────────────
+    document.getElementById('newIntakeBtn').addEventListener('click', () => {
+      currentDealId = null;
+      document.getElementById('resultsView').classList.remove('visible');
+      document.getElementById('loadingState').classList.remove('visible');
+      document.getElementById('intakeSection').style.display = '';
+      document.getElementById('pasteText').value = '';
+      uploadedFiles = [];
+      renderFileList();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('id');
+      history.replaceState({}, '', url.toString());
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Module launch buttons
+    // ──────────────────────────────────────────────────────────────────
+    document.querySelectorAll('.module-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!currentDealId) return;
+        const mod = btn.dataset.module;
+        try {
+          const resp = await fetch('/api/module-launch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deal_id: currentDealId, module: mod }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) { alert(data.error || 'Could not launch module'); return; }
+
+          const inputs = data.inputs || {};
+
+          if (mod === 'demographics') {
+            const addr = inputs.address ? encodeURIComponent(inputs.address) : '';
+            window.location.href = '/?demographics=' + addr;
+          } else if (mod === 'sales-comp') {
+            const params = new URLSearchParams();
+            if (inputs.address) params.set('address', inputs.address);
+            if (inputs.units) params.set('units', inputs.units);
+            if (inputs.vintage) params.set('vintage', inputs.vintage);
+            if (inputs.state) params.set('state', inputs.state);
+            window.location.href = '/sales-comp/?' + params.toString();
+          } else if (mod === 'rent-roll') {
+            const params = new URLSearchParams();
+            if (inputs.blob_url) params.set('rent_roll_url', inputs.blob_url);
+            window.location.href = '/?rent_roll=' + (inputs.blob_url ? encodeURIComponent(inputs.blob_url) : '');
+          } else if (mod === 'memo-pdf') {
+            // Build memo-pdf payload from inputs and POST it
+            const memoResp = await fetch('/api/memo-pdf', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: {
+                  name: inputs.property_name,
+                  address: inputs.address,
+                  state: inputs.state,
+                  yearBuilt: inputs.vintage,
+                  totalUnits: inputs.units ? String(inputs.units) : undefined,
+                  majorityType: 'AL',
+                },
+                comps: [],
+                stats: {},
+              }),
+            });
+            if (memoResp.ok) {
+              const blob = await memoResp.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = 'deal-memo.pdf'; a.click();
+            }
+          }
+        } catch (err) {
+          alert('Module launch failed: ' + err.message);
+        }
+      });
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Load existing deal from URL ?id=
+    // ──────────────────────────────────────────────────────────────────
+    (async () => {
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!id) return;
+      showLoading();
+      try {
+        const resp = await fetch('/api/deal-get?id=' + encodeURIComponent(id));
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Deal not found');
+        hideLoading();
+        renderResults({ deal_id: id, deal: data.deal, computed: data.deal.computed_metrics || {}, next_steps: [] });
+      } catch (err) {
+        hideLoading();
+        document.getElementById('intakeSection').style.display = '';
+        showError(err.message || 'Could not load deal.');
+      }
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deal Pipeline — Bloomfield Capital</title>
+    <meta name="description" content="Bloomfield Capital senior housing deal pipeline dashboard — track all submitted deals and their status." />
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f3f6fa;
+        --card: #ffffff;
+        --card-soft: #f8fafc;
+        --ink: #111827;
+        --muted: #627083;
+        --line: #dbe3ee;
+        --blue: #086aa6;
+        --blue-dark: #07547f;
+        --blue-soft: #eef4fa;
+        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        --green: #087f5b;
+        --amber: #b45309;
+        --red: #b42318;
+        --radius: 18px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top left, rgba(8,106,166,0.12), transparent 34rem), var(--bg);
+        color: var(--ink);
+        font-family: Satoshi, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: -0.01em;
+      }
+      button, input, select { font: inherit; }
+      .shell {
+        width: min(1280px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 64px;
+      }
+
+      /* ── Topbar ── */
+      .topbar {
+        display: flex; justify-content: space-between; gap: 24px; align-items: flex-start;
+        background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+        box-shadow: var(--shadow); border-radius: var(--radius);
+        padding: 22px; margin-bottom: 28px;
+      }
+      .brand { display: flex; gap: 12px; align-items: center; color: var(--blue); font-weight: 700; font-size: 15px; }
+      h1 { margin: 4px 0 4px; font-size: clamp(20px, 3vw, 28px); line-height: 1.1; letter-spacing: -0.03em; }
+      .lede { margin: 0; color: var(--muted); font-size: 14px; }
+      .back-link { color: var(--blue); text-decoration: none; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+      .back-link:hover { color: var(--blue-dark); }
+
+      /* ── Buttons ── */
+      .button {
+        border: 0; border-radius: 12px; padding: 10px 16px;
+        background: var(--blue); color: #fff; font-weight: 700; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px; font-size: 14px;
+        transition: background 0.15s;
+      }
+      .button:hover { background: var(--blue-dark); }
+      .button.secondary { background: var(--blue-soft); color: var(--blue); border: 1px solid #d6e5f1; }
+      .button.secondary:hover { background: #e3eef7; }
+
+      /* ── Filters bar ── */
+      .filters {
+        display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
+      }
+      .search-input {
+        flex: 1; min-width: 180px; border: 1px solid #c9d4e3; border-radius: 12px;
+        background: #fff; color: var(--ink); padding: 10px 14px; outline: none; font-size: 14px;
+      }
+      .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,106,166,0.14); }
+      .filter-select {
+        border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+        background: #fff; font-size: 14px; font-weight: 600; cursor: pointer; outline: none;
+      }
+      .filter-select:focus { border-color: var(--blue); }
+      .count-badge {
+        background: var(--blue-soft); color: var(--blue-dark); font-size: 12px; font-weight: 700;
+        padding: 4px 10px; border-radius: 8px;
+      }
+
+      /* ── Stats strip ── */
+      .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+      .stat-card {
+        background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+        box-shadow: var(--shadow); border-radius: 14px; padding: 16px;
+      }
+      .stat-card .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+      .stat-card .stat-val { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+
+      /* ── Table ── */
+      .table-wrap {
+        background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+        box-shadow: var(--shadow); border-radius: var(--radius); overflow: hidden;
+      }
+      table { width: 100%; border-collapse: collapse; }
+      th {
+        background: #f8fafc; color: #475569; text-align: left;
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+        padding: 13px 16px; border-bottom: 2px solid var(--line); font-weight: 700;
+        white-space: nowrap;
+      }
+      td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 14px; }
+      tr:last-child td { border-bottom: 0; }
+      tr.deal-row { cursor: pointer; transition: background 0.12s; }
+      tr.deal-row:hover td { background: var(--blue-soft); }
+
+      .prop-name { font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+      .prop-loc { font-size: 12px; color: var(--muted); }
+
+      /* ── Verdict pill ── */
+      .verdict-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700;
+        white-space: nowrap;
+      }
+      .verdict-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+      .verdict-pill.green { background: rgba(8,127,91,0.1); color: var(--green); }
+      .verdict-pill.amber { background: rgba(180,83,9,0.1); color: var(--amber); }
+      .verdict-pill.red { background: rgba(180,35,24,0.1); color: var(--red); }
+      .verdict-pill.none { background: #f3f4f6; color: var(--muted); }
+
+      /* ── Status pill ── */
+      .status-pill {
+        display: inline-block; border-radius: 8px; padding: 4px 9px;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+        background: #f3f4f6; color: var(--muted);
+      }
+      .status-pill.reviewing { background: #eff6ff; color: #2563eb; }
+      .status-pill.termsheet { background: rgba(8,127,91,0.1); color: var(--green); }
+      .status-pill.passed { background: rgba(180,35,24,0.07); color: var(--red); }
+      .status-pill.closed { background: rgba(8,127,91,0.18); color: #065f46; }
+
+      /* ── Headline text clamp ── */
+      .headline-cell { max-width: 340px; color: var(--muted); font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+      /* ── Empty / loading ── */
+      .empty-row td { text-align: center; padding: 56px; color: var(--muted); }
+      .loader {
+        width: 28px; height: 28px; border-radius: 50%;
+        border: 3px solid rgba(8,106,166,0.15); border-top-color: var(--blue);
+        animation: spin 0.85s linear infinite; margin: 0 auto 12px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ── Responsive ── */
+      @media (max-width: 900px) {
+        .stats-strip { grid-template-columns: repeat(2, 1fr); }
+        .topbar { flex-direction: column; }
+        .headline-cell { display: none; }
+      }
+      @media (max-width: 600px) {
+        .stats-strip { grid-template-columns: 1fr 1fr; }
+        .filters { flex-direction: column; }
+        .search-input { min-width: unset; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div>
+          <div class="brand">
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <circle cx="20" cy="20" r="15" stroke="currentColor" stroke-width="2" opacity=".25"/>
+              <circle cx="20" cy="20" r="9" stroke="currentColor" stroke-width="2" opacity=".55"/>
+              <circle cx="20" cy="20" r="3" fill="currentColor"/>
+              <path d="M20 5v6M20 29v6M5 20h6M29 20h6" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Bloomfield Capital
+          </div>
+          <h1>Deal Pipeline</h1>
+          <p class="lede">All submitted deals — search, filter by verdict or status, click to open analyst read.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+          <a href="/deal-intake/" class="button">+ New intake</a>
+          <a href="/" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Back to hub
+          </a>
+        </div>
+      </header>
+
+      <!-- Stats strip -->
+      <div class="stats-strip" id="statsStrip">
+        <div class="stat-card"><div class="stat-label">Total deals</div><div class="stat-val" id="statTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Green</div><div class="stat-val" style="color:var(--green)" id="statGreen">—</div></div>
+        <div class="stat-card"><div class="stat-label">Amber</div><div class="stat-val" style="color:var(--amber)" id="statAmber">—</div></div>
+        <div class="stat-card"><div class="stat-label">In review</div><div class="stat-val" style="color:var(--blue)" id="statReviewing">—</div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <input type="search" class="search-input" id="searchBox" placeholder="Search property, city, sponsor…" />
+        <select class="filter-select" id="filterVerdict">
+          <option value="">All verdicts</option>
+          <option value="green">Green</option>
+          <option value="amber">Amber</option>
+          <option value="red">Red</option>
+        </select>
+        <select class="filter-select" id="filterStatus">
+          <option value="">All statuses</option>
+          <option value="new">New</option>
+          <option value="reviewing">Reviewing</option>
+          <option value="termsheet">Term Sheet</option>
+          <option value="passed">Passed</option>
+          <option value="closed">Closed</option>
+        </select>
+        <span class="count-badge" id="countBadge">0 deals</span>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Property</th>
+              <th>Location</th>
+              <th>Units</th>
+              <th>Ask</th>
+              <th>Verdict</th>
+              <th class="headline-cell">Headline</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row"><td colspan="9"><div class="loader"></div><p>Loading deals…</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <script>
+    let allDeals = [];
+
+    // ────────────────────────────────────────────────
+    // Format helpers
+    // ────────────────────────────────────────────────
+    function fmt$(n) {
+      if (n == null) return '—';
+      const num = Number(n);
+      if (num >= 1e6) return '$' + (num / 1e6).toFixed(1) + 'mm';
+      if (num >= 1e3) return '$' + (num / 1e3).toFixed(0) + 'k';
+      return '$' + num.toLocaleString();
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d)) return '—';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+    }
+
+    function verdictPill(v) {
+      if (!v) return '<span class="verdict-pill none"><span class="dot"></span>—</span>';
+      const label = v.charAt(0).toUpperCase() + v.slice(1);
+      return `<span class="verdict-pill ${v}"><span class="dot"></span>${label}</span>`;
+    }
+
+    function statusPill(s) {
+      const labels = { new: 'New', reviewing: 'Reviewing', termsheet: 'Term Sheet', passed: 'Passed', closed: 'Closed' };
+      const label = labels[s] || s || 'New';
+      return `<span class="status-pill ${s || 'new'}">${label}</span>`;
+    }
+
+    // ────────────────────────────────────────────────
+    // Load deals
+    // ────────────────────────────────────────────────
+    async function loadDeals() {
+      try {
+        const resp = await fetch('/api/deals-list');
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Failed to load');
+        allDeals = data.deals || [];
+        updateStats();
+        renderTable();
+      } catch (err) {
+        document.getElementById('tableBody').innerHTML =
+          `<tr class="empty-row"><td colspan="9">Could not load deals: ${err.message}</td></tr>`;
+      }
+    }
+
+    // ────────────────────────────────────────────────
+    // Stats
+    // ────────────────────────────────────────────────
+    function updateStats() {
+      document.getElementById('statTotal').textContent = allDeals.length;
+      document.getElementById('statGreen').textContent = allDeals.filter(d => d.verdict === 'green').length;
+      document.getElementById('statAmber').textContent = allDeals.filter(d => d.verdict === 'amber').length;
+      document.getElementById('statReviewing').textContent = allDeals.filter(d => d.status === 'reviewing' || d.status === 'termsheet').length;
+    }
+
+    // ────────────────────────────────────────────────
+    // Render table
+    // ────────────────────────────────────────────────
+    function renderTable() {
+      const search = document.getElementById('searchBox').value.toLowerCase();
+      const vFilter = document.getElementById('filterVerdict').value;
+      const sFilter = document.getElementById('filterStatus').value;
+
+      let deals = allDeals;
+
+      if (search) {
+        deals = deals.filter(d =>
+          (d.property_name || '').toLowerCase().includes(search) ||
+          (d.city || '').toLowerCase().includes(search) ||
+          (d.state || '').toLowerCase().includes(search) ||
+          (d.headline || '').toLowerCase().includes(search) ||
+          (d.verdict_label || '').toLowerCase().includes(search)
+        );
+      }
+      if (vFilter) deals = deals.filter(d => d.verdict === vFilter);
+      if (sFilter) deals = deals.filter(d => (d.status || 'new') === sFilter);
+
+      document.getElementById('countBadge').textContent = deals.length + (deals.length === 1 ? ' deal' : ' deals');
+
+      if (!deals.length) {
+        document.getElementById('tableBody').innerHTML =
+          `<tr class="empty-row"><td colspan="9">${allDeals.length ? 'No deals match the current filters.' : 'No deals yet. <a href="/deal-intake/" style="color:var(--blue);font-weight:700;">Submit the first one →</a>'}</td></tr>`;
+        return;
+      }
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = deals.map(d => `
+        <tr class="deal-row" data-id="${d.id}" tabindex="0" role="button" aria-label="Open deal ${d.property_name || d.id}">
+          <td style="white-space:nowrap;color:var(--muted);font-size:13px;">${fmtDate(d.created_at)}</td>
+          <td>
+            <div class="prop-name">${d.property_name || '<em style="color:var(--muted)">Unnamed</em>'}</div>
+          </td>
+          <td>
+            <div style="font-size:13px;">${[d.city, d.state].filter(Boolean).join(', ') || '—'}</div>
+          </td>
+          <td style="font-size:13px;color:var(--muted);">${d.units != null ? d.units : '—'}</td>
+          <td style="font-size:13px;font-weight:600;">${fmt$(d.ask_amount)}</td>
+          <td>${verdictPill(d.verdict)}</td>
+          <td class="headline-cell">${d.headline || d.verdict_label || '—'}</td>
+          <td>${statusPill(d.status)}</td>
+          <td>
+            <a href="/deal-intake/?id=${d.id}" class="button secondary" style="padding:6px 12px;font-size:12px;" tabindex="-1">Open →</a>
+          </td>
+        </tr>
+      `).join('');
+
+      // Row click navigation
+      tbody.querySelectorAll('.deal-row').forEach(row => {
+        function nav() { window.location.href = '/deal-intake/?id=' + row.dataset.id; }
+        row.addEventListener('click', e => { if (e.target.tagName !== 'A') nav(); });
+        row.addEventListener('keydown', e => { if (e.key === 'Enter') nav(); });
+      });
+    }
+
+    // ────────────────────────────────────────────────
+    // Filter listeners
+    // ────────────────────────────────────────────────
+    document.getElementById('searchBox').addEventListener('input', renderTable);
+    document.getElementById('filterVerdict').addEventListener('change', renderTable);
+    document.getElementById('filterStatus').addEventListener('change', renderTable);
+
+    // ────────────────────────────────────────────────
+    // Init
+    // ────────────────────────────────────────────────
+    loadDeals();
+
+    // Auto-refresh every 30s in case of email-forwarded deals
+    setInterval(loadDeals, 30000);
+    </script>
+  </body>
+</html>
