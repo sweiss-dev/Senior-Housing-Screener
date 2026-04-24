@@ -12,43 +12,30 @@
     }
   },
   "rewrites": [
-    {
-      "source": "/deal-intake",
-      "destination": "/deal-intake/index.html"
-    },
-    {
-      "source": "/deal-intake/",
-      "destination": "/deal-intake/index.html"
-    },
-    {
-      "source": "/deals",
-      "destination": "/deals/index.html"
-    },
-    {
-      "source": "/deals/",
-      "destination": "/deals/index.html"
-    },
-    {
-      "source": "/sales-comp",
-      "destination": "/sales-comp/index.html"
-    },
-    {
-      "source": "/sales-comp/",
-      "destination": "/sales-comp/index.html"
-    },
-    {
-      "source": "/",
-      "destination": "/index.html"
-    }
+    { "source": "/api/deal-get",           "destination": "/api/router?_action=deal-get" },
+    { "source": "/api/deals-list",         "destination": "/api/router?_action=deals-list" },
+    { "source": "/api/deal-update-status", "destination": "/api/router?_action=deal-update-status" },
+    { "source": "/api/module-launch",      "destination": "/api/router?_action=module-launch" },
+    { "source": "/api/deal-review",        "destination": "/api/router?_action=deal-review" },
+    { "source": "/api/rent-roll-hints",    "destination": "/api/router?_action=rent-roll-hints" },
+    { "source": "/api/saved-searches",     "destination": "/api/router?_action=saved-searches" },
+    { "source": "/api/health",             "destination": "/api/router?_action=health" },
+    { "source": "/api/map-points",         "destination": "/api/router?_action=map-points" },
+    { "source": "/api/map-image",          "destination": "/api/router?_action=map-image" },
+
+    { "source": "/deal-intake",  "destination": "/deal-intake/index.html" },
+    { "source": "/deal-intake/", "destination": "/deal-intake/index.html" },
+    { "source": "/deals",        "destination": "/deals/index.html" },
+    { "source": "/deals/",       "destination": "/deals/index.html" },
+    { "source": "/sales-comp",   "destination": "/sales-comp/index.html" },
+    { "source": "/sales-comp/",  "destination": "/sales-comp/index.html" },
+    { "source": "/",             "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
   ]
