@@ -14,7 +14,11 @@ import { waitUntil } from "@vercel/functions";
 import { getDeal, updateDeal } from "../server/db.js";
 import { callClaudeForDeal } from "../server/deal-extract.js";
 
-export const maxDuration = 60;
+// Pro plan supports up to 300s; Hobby caps at 60. Long deal submissions
+// (60K+ chars of raw_text) can push Claude past 60s. Bumping to 300 gives
+// headroom and lets the tolerant JSON parser surface real errors instead of
+// a function-invocation timeout.
+export const maxDuration = 300;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
