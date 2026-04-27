@@ -245,6 +245,48 @@ export async function updateDealStatus(id: string, status: string): Promise<void
   await sql`UPDATE deals SET status = ${status} WHERE id = ${id}`;
 }
 
+// Patch any subset of deal fields. Used by the async /api/deal-process route
+// after Claude finishes extracting metrics on a deal that was inserted in
+// "processing" state by /api/deal-intake.
+export async function updateDeal(id: string, patch: Partial<Deal>): Promise<void> {
+  if (!USE_POSTGRES) {
+    const deal = memDeals.get(id);
+    if (deal) Object.assign(deal, patch);
+    return;
+  }
+  const { sql } = await import("@vercel/postgres");
+  await sql`
+    UPDATE deals SET
+      property_name    = COALESCE(${patch.property_name    ?? null}, property_name),
+      address          = COALESCE(${patch.address          ?? null}, address),
+      city             = COALESCE(${patch.city             ?? null}, city),
+      state            = COALESCE(${patch.state            ?? null}, state),
+      units            = COALESCE(${patch.units            ?? null}, units),
+      vintage          = COALESCE(${patch.vintage          ?? null}, vintage),
+      sponsor          = COALESCE(${patch.sponsor          ?? null}, sponsor),
+      operator         = COALESCE(${patch.operator         ?? null}, operator),
+      broker_firm      = COALESCE(${patch.broker_firm      ?? null}, broker_firm),
+      broker_contact   = COALESCE(${patch.broker_contact   ?? null}, broker_contact),
+      ask_amount       = COALESCE(${patch.ask_amount       ?? null}, ask_amount),
+      sponsor_basis    = COALESCE(${patch.sponsor_basis    ?? null}, sponsor_basis),
+      purchase_price   = COALESCE(${patch.purchase_price   ?? null}, purchase_price),
+      purpose          = COALESCE(${patch.purpose          ?? null}, purpose),
+      noi_t12          = COALESCE(${patch.noi_t12          ?? null}, noi_t12),
+      noi_y1           = COALESCE(${patch.noi_y1           ?? null}, noi_y1),
+      noi_y2           = COALESCE(${patch.noi_y2           ?? null}, noi_y2),
+      noi_stab         = COALESCE(${patch.noi_stab         ?? null}, noi_stab),
+      occupancy        = COALESCE(${patch.occupancy        ?? null}, occupancy),
+      verdict          = COALESCE(${patch.verdict          ?? null}, verdict),
+      verdict_label    = COALESCE(${patch.verdict_label    ?? null}, verdict_label),
+      headline         = COALESCE(${patch.headline         ?? null}, headline),
+      memo_markdown    = COALESCE(${patch.memo_markdown    ?? null}, memo_markdown),
+      computed_metrics = COALESCE(${patch.computed_metrics ? JSON.stringify(patch.computed_metrics) : null}, computed_metrics),
+      raw_text         = COALESCE(${patch.raw_text         ?? null}, raw_text),
+      status           = COALESCE(${patch.status           ?? null}, status)
+    WHERE id = ${id}
+  `;
+}
+
 // ---------------------------------------------------------------------------
 // DealFile CRUD
 // ---------------------------------------------------------------------------
