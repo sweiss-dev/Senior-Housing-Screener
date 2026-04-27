@@ -1,13 +1,14 @@
 /**
- * server/db.ts — Vercel Postgres (Neon) client + schema bootstrap.
+ * server/db.ts — Postgres client + schema bootstrap.
  *
- * Graceful fallback: if POSTGRES_URL is not set we silently use an in-memory
- * Map so local dev and first deploy don't crash before the user provisions
- * Postgres.  All storage operations are accessed through the helpers exported
- * below rather than through the sql tag directly.
+ * Uses the standard `pg` package so any Postgres URL works (Supabase, Neon,
+ * RDS, etc.).  Graceful fallback: if POSTGRES_URL is not set we silently use
+ * an in-memory Map so local dev and first deploy don't crash before the user
+ * provisions Postgres.
  */
 
 import { nanoid } from "nanoid";
+import { Pool, type QueryResultRow } from "pg";
 
 // ---------------------------------------------------------------------------
 // Types (mirror the DB schema so both paths share the same shape)
@@ -67,7 +68,8 @@ export type ModuleRun = {
 // Decide which backend to use
 // ---------------------------------------------------------------------------
 
-const USE_POSTGRES = Boolean(process.env.POSTGRES_URL);
+const POSTGRES_URL = process.env.POSTGRES_URL ?? process.env.DATABASE_URL ?? "";
+const USE_POSTGRES = Boolean(POSTGRES_URL);
 let _warnedOnce = false;
 
 function warnFallback() {
@@ -76,8 +78,38 @@ function warnFallback() {
   console.warn(
     "[db] POSTGRES_URL not set — using in-memory fallback. " +
     "Data will not persist across restarts. " +
-    "Provision Vercel Postgres (Neon) and redeploy to persist."
+    "Provision Postgres and redeploy to persist.",
   );
+}
+
+// Reuse a single Pool across hot-reloaded module instances on Vercel.
+declare global {
+  // eslint-disable-next-line no-var
+  var __pgPool: Pool | undefined;
+}
+
+function getPool(): Pool {
+  if (!global.__pgPool) {
+    global.__pgPool = new Pool({
+      connectionString: POSTGRES_URL,
+      // Supabase pooler & most managed Postgres need TLS but don't ship a CA
+      // bundle; allow self-signed.
+      ssl: { rejectUnauthorized: false },
+      // Keep the pool tiny — serverless + pgbouncer.
+      max: 3,
+      idleTimeoutMillis: 10_000,
+    });
+  }
+  return global.__pgPool;
+}
+
+async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params: unknown[] = [],
+): Promise<{ rows: T[] }> {
+  const pool = getPool();
+  const result = await pool.query<T>(text, params as unknown[]);
+  return { rows: result.rows };
 }
 
 // ---------------------------------------------------------------------------
@@ -97,8 +129,7 @@ export async function ensureSchema(): Promise<void> {
     warnFallback();
     return;
   }
-  const { sql } = await import("@vercel/postgres");
-  await sql`
+  await query(`
     CREATE TABLE IF NOT EXISTS deals (
       id            text PRIMARY KEY,
       created_at    timestamptz DEFAULT now(),
@@ -130,8 +161,8 @@ export async function ensureSchema(): Promise<void> {
       raw_text      text,
       status        text DEFAULT 'new'
     )
-  `;
-  await sql`
+  `);
+  await query(`
     CREATE TABLE IF NOT EXISTS deal_files (
       id         text PRIMARY KEY,
       deal_id    text REFERENCES deals(id),
@@ -140,8 +171,8 @@ export async function ensureSchema(): Promise<void> {
       kind       text,
       created_at timestamptz DEFAULT now()
     )
-  `;
-  await sql`
+  `);
+  await query(`
     CREATE TABLE IF NOT EXISTS module_runs (
       id          text PRIMARY KEY,
       deal_id     text REFERENCES deals(id),
@@ -150,14 +181,16 @@ export async function ensureSchema(): Promise<void> {
       output_json jsonb,
       created_at  timestamptz DEFAULT now()
     )
-  `;
+  `);
 }
 
 // ---------------------------------------------------------------------------
 // Deal CRUD
 // ---------------------------------------------------------------------------
 
-export async function insertDeal(deal: Omit<Deal, "id" | "created_at"> & { id?: string }): Promise<Deal> {
+export async function insertDeal(
+  deal: Omit<Deal, "id" | "created_at"> & { id?: string },
+): Promise<Deal> {
   const id = deal.id ?? nanoid(12);
   const now = new Date().toISOString();
 
@@ -167,8 +200,8 @@ export async function insertDeal(deal: Omit<Deal, "id" | "created_at"> & { id?: 
     return record;
   }
 
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<Deal>`
+  const result = await query<Deal>(
+    `
     INSERT INTO deals (
       id, source, property_name, address, city, state, units, vintage,
       sponsor, operator, broker_firm, broker_contact,
@@ -177,37 +210,46 @@ export async function insertDeal(deal: Omit<Deal, "id" | "created_at"> & { id?: 
       verdict, verdict_label, headline, memo_markdown,
       computed_metrics, raw_text, status
     ) VALUES (
-      ${id},
-      ${deal.source ?? null},
-      ${deal.property_name ?? null},
-      ${deal.address ?? null},
-      ${deal.city ?? null},
-      ${deal.state ?? null},
-      ${deal.units ?? null},
-      ${deal.vintage ?? null},
-      ${deal.sponsor ?? null},
-      ${deal.operator ?? null},
-      ${deal.broker_firm ?? null},
-      ${deal.broker_contact ?? null},
-      ${deal.ask_amount ?? null},
-      ${deal.sponsor_basis ?? null},
-      ${deal.purchase_price ?? null},
-      ${deal.purpose ?? null},
-      ${deal.noi_t12 ?? null},
-      ${deal.noi_y1 ?? null},
-      ${deal.noi_y2 ?? null},
-      ${deal.noi_stab ?? null},
-      ${deal.occupancy ?? null},
-      ${deal.verdict ?? null},
-      ${deal.verdict_label ?? null},
-      ${deal.headline ?? null},
-      ${deal.memo_markdown ?? null},
-      ${deal.computed_metrics ? JSON.stringify(deal.computed_metrics) : null},
-      ${deal.raw_text ?? null},
-      ${deal.status ?? "new"}
+      $1, $2, $3, $4, $5, $6, $7, $8,
+      $9, $10, $11, $12,
+      $13, $14, $15, $16,
+      $17, $18, $19, $20, $21,
+      $22, $23, $24, $25,
+      $26, $27, $28
     )
     RETURNING *
-  `;
+    `,
+    [
+      id,
+      deal.source ?? null,
+      deal.property_name ?? null,
+      deal.address ?? null,
+      deal.city ?? null,
+      deal.state ?? null,
+      deal.units ?? null,
+      deal.vintage ?? null,
+      deal.sponsor ?? null,
+      deal.operator ?? null,
+      deal.broker_firm ?? null,
+      deal.broker_contact ?? null,
+      deal.ask_amount ?? null,
+      deal.sponsor_basis ?? null,
+      deal.purchase_price ?? null,
+      deal.purpose ?? null,
+      deal.noi_t12 ?? null,
+      deal.noi_y1 ?? null,
+      deal.noi_y2 ?? null,
+      deal.noi_stab ?? null,
+      deal.occupancy ?? null,
+      deal.verdict ?? null,
+      deal.verdict_label ?? null,
+      deal.headline ?? null,
+      deal.memo_markdown ?? null,
+      deal.computed_metrics ? JSON.stringify(deal.computed_metrics) : null,
+      deal.raw_text ?? null,
+      deal.status ?? "new",
+    ],
+  );
   return result.rows[0];
 }
 
@@ -215,23 +257,21 @@ export async function getDeal(id: string): Promise<Deal | null> {
   if (!USE_POSTGRES) {
     return memDeals.get(id) ?? null;
   }
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<Deal>`SELECT * FROM deals WHERE id = ${id}`;
+  const result = await query<Deal>(`SELECT * FROM deals WHERE id = $1`, [id]);
   return result.rows[0] ?? null;
 }
 
 export async function listDeals(): Promise<Deal[]> {
   if (!USE_POSTGRES) {
     return [...memDeals.values()].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
   }
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<Deal>`
+  const result = await query<Deal>(`
     SELECT id, property_name, city, state, verdict, verdict_label, headline,
            status, created_at, ask_amount, units
     FROM deals ORDER BY created_at DESC
-  `;
+  `);
   return result.rows;
 }
 
@@ -241,8 +281,7 @@ export async function updateDealStatus(id: string, status: string): Promise<void
     if (deal) deal.status = status;
     return;
   }
-  const { sql } = await import("@vercel/postgres");
-  await sql`UPDATE deals SET status = ${status} WHERE id = ${id}`;
+  await query(`UPDATE deals SET status = $1 WHERE id = $2`, [status, id]);
 }
 
 // Patch any subset of deal fields. Used by the async /api/deal-process route
@@ -254,44 +293,76 @@ export async function updateDeal(id: string, patch: Partial<Deal>): Promise<void
     if (deal) Object.assign(deal, patch);
     return;
   }
-  const { sql } = await import("@vercel/postgres");
-  await sql`
+  await query(
+    `
     UPDATE deals SET
-      property_name    = COALESCE(${patch.property_name    ?? null}, property_name),
-      address          = COALESCE(${patch.address          ?? null}, address),
-      city             = COALESCE(${patch.city             ?? null}, city),
-      state            = COALESCE(${patch.state            ?? null}, state),
-      units            = COALESCE(${patch.units            ?? null}, units),
-      vintage          = COALESCE(${patch.vintage          ?? null}, vintage),
-      sponsor          = COALESCE(${patch.sponsor          ?? null}, sponsor),
-      operator         = COALESCE(${patch.operator         ?? null}, operator),
-      broker_firm      = COALESCE(${patch.broker_firm      ?? null}, broker_firm),
-      broker_contact   = COALESCE(${patch.broker_contact   ?? null}, broker_contact),
-      ask_amount       = COALESCE(${patch.ask_amount       ?? null}, ask_amount),
-      sponsor_basis    = COALESCE(${patch.sponsor_basis    ?? null}, sponsor_basis),
-      purchase_price   = COALESCE(${patch.purchase_price   ?? null}, purchase_price),
-      purpose          = COALESCE(${patch.purpose          ?? null}, purpose),
-      noi_t12          = COALESCE(${patch.noi_t12          ?? null}, noi_t12),
-      noi_y1           = COALESCE(${patch.noi_y1           ?? null}, noi_y1),
-      noi_y2           = COALESCE(${patch.noi_y2           ?? null}, noi_y2),
-      noi_stab         = COALESCE(${patch.noi_stab         ?? null}, noi_stab),
-      occupancy        = COALESCE(${patch.occupancy        ?? null}, occupancy),
-      verdict          = COALESCE(${patch.verdict          ?? null}, verdict),
-      verdict_label    = COALESCE(${patch.verdict_label    ?? null}, verdict_label),
-      headline         = COALESCE(${patch.headline         ?? null}, headline),
-      memo_markdown    = COALESCE(${patch.memo_markdown    ?? null}, memo_markdown),
-      computed_metrics = COALESCE(${patch.computed_metrics ? JSON.stringify(patch.computed_metrics) : null}, computed_metrics),
-      raw_text         = COALESCE(${patch.raw_text         ?? null}, raw_text),
-      status           = COALESCE(${patch.status           ?? null}, status)
-    WHERE id = ${id}
-  `;
+      property_name    = COALESCE($1, property_name),
+      address          = COALESCE($2, address),
+      city             = COALESCE($3, city),
+      state            = COALESCE($4, state),
+      units            = COALESCE($5, units),
+      vintage          = COALESCE($6, vintage),
+      sponsor          = COALESCE($7, sponsor),
+      operator         = COALESCE($8, operator),
+      broker_firm      = COALESCE($9, broker_firm),
+      broker_contact   = COALESCE($10, broker_contact),
+      ask_amount       = COALESCE($11, ask_amount),
+      sponsor_basis    = COALESCE($12, sponsor_basis),
+      purchase_price   = COALESCE($13, purchase_price),
+      purpose          = COALESCE($14, purpose),
+      noi_t12          = COALESCE($15, noi_t12),
+      noi_y1           = COALESCE($16, noi_y1),
+      noi_y2           = COALESCE($17, noi_y2),
+      noi_stab         = COALESCE($18, noi_stab),
+      occupancy        = COALESCE($19, occupancy),
+      verdict          = COALESCE($20, verdict),
+      verdict_label    = COALESCE($21, verdict_label),
+      headline         = COALESCE($22, headline),
+      memo_markdown    = COALESCE($23, memo_markdown),
+      computed_metrics = COALESCE($24::jsonb, computed_metrics),
+      raw_text         = COALESCE($25, raw_text),
+      status           = COALESCE($26, status)
+    WHERE id = $27
+    `,
+    [
+      patch.property_name ?? null,
+      patch.address ?? null,
+      patch.city ?? null,
+      patch.state ?? null,
+      patch.units ?? null,
+      patch.vintage ?? null,
+      patch.sponsor ?? null,
+      patch.operator ?? null,
+      patch.broker_firm ?? null,
+      patch.broker_contact ?? null,
+      patch.ask_amount ?? null,
+      patch.sponsor_basis ?? null,
+      patch.purchase_price ?? null,
+      patch.purpose ?? null,
+      patch.noi_t12 ?? null,
+      patch.noi_y1 ?? null,
+      patch.noi_y2 ?? null,
+      patch.noi_stab ?? null,
+      patch.occupancy ?? null,
+      patch.verdict ?? null,
+      patch.verdict_label ?? null,
+      patch.headline ?? null,
+      patch.memo_markdown ?? null,
+      patch.computed_metrics ? JSON.stringify(patch.computed_metrics) : null,
+      patch.raw_text ?? null,
+      patch.status ?? null,
+      id,
+    ],
+  );
 }
 
 // ---------------------------------------------------------------------------
 // DealFile CRUD
 // ---------------------------------------------------------------------------
 
-export async function insertDealFile(file: Omit<DealFile, "id" | "created_at">): Promise<DealFile> {
+export async function insertDealFile(
+  file: Omit<DealFile, "id" | "created_at">,
+): Promise<DealFile> {
   const id = nanoid(12);
   const now = new Date().toISOString();
 
@@ -301,12 +372,14 @@ export async function insertDealFile(file: Omit<DealFile, "id" | "created_at">):
     return record;
   }
 
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<DealFile>`
+  const result = await query<DealFile>(
+    `
     INSERT INTO deal_files (id, deal_id, filename, blob_url, kind)
-    VALUES (${id}, ${file.deal_id}, ${file.filename}, ${file.blob_url ?? null}, ${file.kind ?? null})
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
-  `;
+    `,
+    [id, file.deal_id, file.filename, file.blob_url ?? null, file.kind ?? null],
+  );
   return result.rows[0];
 }
 
@@ -314,10 +387,10 @@ export async function getDealFiles(dealId: string): Promise<DealFile[]> {
   if (!USE_POSTGRES) {
     return [...memFiles.values()].filter((f) => f.deal_id === dealId);
   }
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<DealFile>`
-    SELECT * FROM deal_files WHERE deal_id = ${dealId} ORDER BY created_at ASC
-  `;
+  const result = await query<DealFile>(
+    `SELECT * FROM deal_files WHERE deal_id = $1 ORDER BY created_at ASC`,
+    [dealId],
+  );
   return result.rows;
 }
 
@@ -325,7 +398,9 @@ export async function getDealFiles(dealId: string): Promise<DealFile[]> {
 // ModuleRun CRUD
 // ---------------------------------------------------------------------------
 
-export async function insertModuleRun(run: Omit<ModuleRun, "id" | "created_at">): Promise<ModuleRun> {
+export async function insertModuleRun(
+  run: Omit<ModuleRun, "id" | "created_at">,
+): Promise<ModuleRun> {
   const id = nanoid(12);
   const now = new Date().toISOString();
 
@@ -335,18 +410,20 @@ export async function insertModuleRun(run: Omit<ModuleRun, "id" | "created_at">)
     return record;
   }
 
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<ModuleRun>`
+  const result = await query<ModuleRun>(
+    `
     INSERT INTO module_runs (id, deal_id, module, inputs_json, output_json)
-    VALUES (
-      ${id},
-      ${run.deal_id},
-      ${run.module},
-      ${JSON.stringify(run.inputs_json)},
-      ${JSON.stringify(run.output_json)}
-    )
+    VALUES ($1, $2, $3, $4::jsonb, $5::jsonb)
     RETURNING *
-  `;
+    `,
+    [
+      id,
+      run.deal_id,
+      run.module,
+      JSON.stringify(run.inputs_json),
+      JSON.stringify(run.output_json),
+    ],
+  );
   return result.rows[0];
 }
 
@@ -354,9 +431,9 @@ export async function getDealModuleRuns(dealId: string): Promise<ModuleRun[]> {
   if (!USE_POSTGRES) {
     return [...memRuns.values()].filter((r) => r.deal_id === dealId);
   }
-  const { sql } = await import("@vercel/postgres");
-  const result = await sql<ModuleRun>`
-    SELECT * FROM module_runs WHERE deal_id = ${dealId} ORDER BY created_at ASC
-  `;
+  const result = await query<ModuleRun>(
+    `SELECT * FROM module_runs WHERE deal_id = $1 ORDER BY created_at ASC`,
+    [dealId],
+  );
   return result.rows;
 }
