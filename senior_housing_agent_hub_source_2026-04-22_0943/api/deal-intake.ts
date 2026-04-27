@@ -129,7 +129,7 @@ function dispatchProcess(req: VercelRequest, dealId: string): void {
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   const proto = (req.headers["x-forwarded-proto"] as string) || "https";
   const origin = `${proto}://${host}`;
-  const url = `${origin}/api/deal-process`;
+  const url = `${origin}/api/deal-process?ack=1`;
 
   // Use an internal shared secret to prevent random callers from triggering
   // expensive Claude calls. Set DEAL_PROCESS_SECRET in Vercel env vars; if
