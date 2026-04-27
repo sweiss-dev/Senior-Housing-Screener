@@ -34,6 +34,10 @@ export const config = {
   },
 };
 
+// Allow up to 60s for PDF parsing + Claude extraction. Vercel Hobby supports
+// 60s for Node.js functions; Pro/Enterprise can extend further if needed.
+export const maxDuration = 60;
+
 // ---------------------------------------------------------------------------
 // Claude client
 // ---------------------------------------------------------------------------
