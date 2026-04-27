@@ -160,6 +160,28 @@ function dispatchProcess(req: VercelRequest, dealId: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Optimistic property-name guess from email subject.
+//
+// Until Claude returns, the deals list shows "Unnamed". Pull a best-effort
+// label from the email subject line so the user can tell deals apart.
+// Claude's structured output overwrites this once extraction completes.
+// ---------------------------------------------------------------------------
+
+function guessPropertyNameFromText(text: string): string | null {
+  if (!text) return null;
+  // Look for a Subject: line in the first ~2KB.
+  const head = text.slice(0, 2048);
+  const m = head.match(/^\s*Subject:\s*(.+)$/im);
+  if (!m) return null;
+  let subject = m[1].trim();
+  // Strip common reply/forward prefixes (RE:, FW:, FWD:, repeated).
+  subject = subject.replace(/^(?:(?:re|fw|fwd)\s*:\s*)+/i, "").trim();
+  if (!subject) return null;
+  // Cap length so the deals table stays tidy.
+  return subject.length > 80 ? subject.slice(0, 77) + "…" : subject;
+}
+
+// ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
 
@@ -255,10 +277,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ------------------------------------------------------------------
     // 2. Insert deal row in 'processing' status. Claude runs separately.
     // ------------------------------------------------------------------
+    const provisionalName = guessPropertyNameFromText(rawText);
+
     const deal = await insertDeal({
       id: dealId,
       source,
-      property_name: null,
+      property_name: provisionalName,
       address: null,
       city: null,
       state: null,
@@ -284,6 +308,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       computed_metrics: null,
       raw_text: rawText.slice(0, 100000),
       status: "processing",
+      error_message: null,
     });
 
     for (const fr of fileRecords) {

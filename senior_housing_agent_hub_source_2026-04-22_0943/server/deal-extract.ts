@@ -375,14 +375,37 @@ export async function callClaudeForDeal(rawText: string): Promise<ClaudeExtracti
     .map((b) => (b as Anthropic.TextBlock).text)
     .join("");
 
-  const jsonStr = rawJson.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  // Tolerant JSON extraction. Claude usually returns clean JSON, but sometimes
+  // wraps it in ```json fences or prefixes it with a sentence. Strategy:
+  //   1. Strip ```json / ``` fences anywhere in the string.
+  //   2. Try a direct parse.
+  //   3. Fallback: locate the first '{' and the matching last '}' and parse
+  //      that slice. This handles "Here is the analysis: { ... }" preambles.
+  const fenced = rawJson.replace(/```(?:json)?/gi, "").trim();
+
+  function extractJsonObject(s: string): string | null {
+    const first = s.indexOf("{");
+    const last = s.lastIndexOf("}");
+    if (first === -1 || last === -1 || last <= first) return null;
+    return s.slice(first, last + 1);
+  }
 
   let raw: ClaudeRawResponse;
   try {
-    raw = JSON.parse(jsonStr) as ClaudeRawResponse;
-  } catch (e) {
-    console.error("[deal-extract] Claude returned invalid JSON:", jsonStr.slice(0, 400));
-    throw new Error("MODEL_INVALID_JSON");
+    raw = JSON.parse(fenced) as ClaudeRawResponse;
+  } catch {
+    const slice = extractJsonObject(fenced);
+    if (!slice) {
+      console.error("[deal-extract] No JSON object found in Claude output:", fenced.slice(0, 400));
+      throw new Error(`MODEL_INVALID_JSON: no { ... } block found. Preview: ${fenced.slice(0, 200)}`);
+    }
+    try {
+      raw = JSON.parse(slice) as ClaudeRawResponse;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[deal-extract] Claude returned invalid JSON:", slice.slice(0, 400));
+      throw new Error(`MODEL_INVALID_JSON: ${msg}. Preview: ${slice.slice(0, 200)}`);
+    }
   }
 
   const computed = computeMetrics(raw.extracted);
