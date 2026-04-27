@@ -20,6 +20,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { waitUntil } from "@vercel/functions";
 import { createRequire } from "node:module";
 import { nanoid } from "nanoid";
 import { insertDeal, insertDealFile, ensureSchema } from "../server/db.js";
@@ -139,15 +140,23 @@ function dispatchProcess(req: VercelRequest, dealId: string): void {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (secret) headers["x-deal-process-secret"] = secret;
 
-  // Note: we deliberately don't await this. The Vercel runtime will keep the
-  // request alive long enough to send the bytes; that's all we need.
-  fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ deal_id: dealId }),
-  }).catch((e) => {
-    console.warn("[deal-intake] Could not dispatch deal-process:", e);
-  });
+  // Use waitUntil so Vercel keeps this function alive long enough to flush the
+  // outbound request. deal-process responds 202 quickly via its own waitUntil,
+  // so this fetch resolves in well under a second.
+  waitUntil(
+    fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ deal_id: dealId }),
+    })
+      .then(async (r) => {
+        const text = await r.text().catch(() => "");
+        console.log(`[deal-intake] dispatch → ${r.status} ${text.slice(0, 200)}`);
+      })
+      .catch((e) => {
+        console.warn("[deal-intake] Could not dispatch deal-process:", e);
+      }),
+  );
 }
 
 // ---------------------------------------------------------------------------

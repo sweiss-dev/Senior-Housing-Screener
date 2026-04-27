@@ -10,6 +10,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { waitUntil } from "@vercel/functions";
 import { getDeal, updateDeal } from "../server/db.js";
 import { callClaudeForDeal } from "../server/deal-extract.js";
 
@@ -37,36 +38,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "deal_id is required" });
   }
 
-  // On Vercel serverless, work after res.send() is frozen — we must finish
-  // before responding. Optional `?ack=1` query param keeps the legacy fire-
-  // and-forget shape, but otherwise we run synchronously and respond when done.
+  // Two modes:
+  //   - ?ack=1 (default for /api/deal-intake dispatch): respond 202 immediately
+  //     and run Claude in background via waitUntil so the function isn't frozen.
+  //   - sync (no ack): run Claude inline and respond when finished. Useful for
+  //     manual debugging via curl.
   const ackOnly = req.query?.ack === "1";
-  if (ackOnly) {
-    res.status(202).json({ ok: true, deal_id: dealId, status: "started" });
-  }
 
-  try {
+  const work = (async () => {
     const deal = await getDeal(dealId);
     if (!deal) {
       console.error(`[deal-process] Deal not found: ${dealId}`);
-      if (!ackOnly) res.status(404).json({ error: "deal not found" });
-      return;
+      return { ok: false, status: "not_found" as const };
     }
     if (deal.status === "new" || (deal.verdict && deal.verdict !== null)) {
-      // Already processed (e.g. duplicate dispatch). No-op.
       console.log(`[deal-process] Deal ${dealId} already processed; skipping.`);
-      if (!ackOnly) res.json({ ok: true, deal_id: dealId, status: "already_processed" });
-      return;
+      return { ok: true, status: "already_processed" as const };
     }
 
     const rawText = deal.raw_text ?? "";
     if (!rawText.trim()) {
-      await updateDeal(dealId, {
-        status: "error",
-        headline: "No deal content found.",
-      });
-      if (!ackOnly) res.json({ ok: false, deal_id: dealId, status: "error", reason: "empty raw_text" });
-      return;
+      await updateDeal(dealId, { status: "error", headline: "No deal content found." });
+      return { ok: false, status: "error" as const, reason: "empty raw_text" };
     }
 
     let parsed;
@@ -79,8 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: "error",
         headline: "Claude extraction failed — open this deal to see raw text and retry.",
       });
-      if (!ackOnly) res.status(500).json({ ok: false, deal_id: dealId, status: "error", reason: msg });
-      return;
+      return { ok: false, status: "error" as const, reason: msg };
     }
 
     const ext = parsed.extracted ?? {};
@@ -115,16 +107,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     console.log(`[deal-process] Completed ${dealId}`);
-    if (!ackOnly) res.json({ ok: true, deal_id: dealId, status: "completed" });
-  } catch (err) {
+    return { ok: true, status: "completed" as const };
+  })().catch(async (err) => {
     const msg = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? (err.stack ?? "").split("\n").slice(0, 6).join("\n") : "";
     console.error(`[deal-process] Unexpected error for ${dealId}:`, err);
     try {
       await updateDeal(dealId, { status: "error" });
     } catch {
       /* ignore */
     }
-    if (!ackOnly) res.status(500).json({ ok: false, deal_id: dealId, status: "error", reason: msg, stack });
+    return { ok: false as const, status: "error" as const, reason: msg };
+  });
+
+  if (ackOnly) {
+    waitUntil(work);
+    return res.status(202).json({ ok: true, deal_id: dealId, status: "started" });
   }
+
+  const result = await work;
+  return res.status(result.ok ? 200 : 500).json({ deal_id: dealId, ...result });
 }
