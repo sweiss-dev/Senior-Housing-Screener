@@ -133,6 +133,12 @@ const stateAbbrByFips = {
   "72": "PR",
 };
 
+// Demographics calls into 12+ sequential Census/TIGERweb/ACS endpoints.
+// Census servers can be slow (5-15s per call); the default 10s Vercel
+// budget is not enough. Bump to 300s (Pro plan; Hobby will silently cap
+// at 60).
+export const maxDuration = 300;
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -161,10 +167,20 @@ export default async function handler(req, res) {
     const blockGroups = await getNearbyBlockGroups(lat, lon, 5.25);
     const rows = [];
 
-    for (const radius of RADIUS_MILES) {
-      const selected = blockGroups.filter((bg) => bg.distanceMiles <= radius);
-      const currentRecords = await getBlockGroupRecords(CURRENT_ACS_YEAR, selected);
-      const priorRecords = await getBlockGroupRecords(PRIOR_ACS_YEAR, selected, true);
+    // Parallelize the 6 ACS calls (current + prior x 3 radii) — they're
+    // independent and Census endpoints are slow, so this cuts wall-time
+    // by ~3x.
+    const radiusResults = await Promise.all(
+      RADIUS_MILES.map(async (radius) => {
+        const selected = blockGroups.filter((bg) => bg.distanceMiles <= radius);
+        const [currentRecords, priorRecords] = await Promise.all([
+          getBlockGroupRecords(CURRENT_ACS_YEAR, selected),
+          getBlockGroupRecords(PRIOR_ACS_YEAR, selected, true),
+        ]);
+        return { radius, selected, currentRecords, priorRecords };
+      })
+    );
+    for (const { radius, selected, currentRecords, priorRecords } of radiusResults) {
       const current = aggregateRecords(currentRecords);
       const prior = aggregateRecords(priorRecords);
       rows.push({
@@ -182,10 +198,13 @@ export default async function handler(req, res) {
       });
     }
 
-    const countyCurrent = await getSummaryRecord(CURRENT_ACS_YEAR, stateFips, countyFips);
-    const countyPrior = await getSummaryRecord(PRIOR_ACS_YEAR, stateFips, countyFips);
-    const stateCurrent = await getSummaryRecord(CURRENT_ACS_YEAR, stateFips);
-    const statePrior = await getSummaryRecord(PRIOR_ACS_YEAR, stateFips);
+    // Parallelize the 4 county/state summary calls.
+    const [countyCurrent, countyPrior, stateCurrent, statePrior] = await Promise.all([
+      getSummaryRecord(CURRENT_ACS_YEAR, stateFips, countyFips),
+      getSummaryRecord(PRIOR_ACS_YEAR, stateFips, countyFips),
+      getSummaryRecord(CURRENT_ACS_YEAR, stateFips),
+      getSummaryRecord(PRIOR_ACS_YEAR, stateFips),
+    ]);
     rows.push(toSummaryRow(countyName, "county", countyCurrent, countyPrior));
     rows.push(toSummaryRow(stateName, "state", stateCurrent, statePrior));
 
