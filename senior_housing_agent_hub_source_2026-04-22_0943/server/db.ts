@@ -90,10 +90,16 @@ declare global {
 
 function getPool(): Pool {
   if (!global.__pgPool) {
+    // Strip any sslmode= from the connection string and explicitly configure
+    // SSL ourselves so we can accept Supabase's self-signed cert chain. The
+    // pg driver's built-in `sslmode=require` enables full chain verification
+    // which Supabase's pooler cert does not satisfy out of the box.
+    const cleanUrl = POSTGRES_URL.replace(/([?&])sslmode=[^&]*/g, "$1")
+      .replace(/[?&]$/, "")
+      .replace(/\?&/, "?");
+
     global.__pgPool = new Pool({
-      connectionString: POSTGRES_URL,
-      // Supabase pooler & most managed Postgres need TLS but don't ship a CA
-      // bundle; allow self-signed.
+      connectionString: cleanUrl,
       ssl: { rejectUnauthorized: false },
       // Keep the pool tiny — serverless + pgbouncer.
       max: 3,
