@@ -14,7 +14,11 @@ import { waitUntil } from "@vercel/functions";
 import { getDeal, updateDeal } from "../server/db.js";
 import { callClaudeForDeal } from "../server/deal-extract.js";
 
-export const maxDuration = 60;
+// Pro plan supports up to 300s; Hobby caps at 60. Long deal submissions
+// (60K+ chars of raw_text) can push Claude past 60s. Bumping to 300 gives
+// headroom and lets the tolerant JSON parser surface real errors instead of
+// a function-invocation timeout.
+export const maxDuration = 300;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -51,10 +55,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error(`[deal-process] Deal not found: ${dealId}`);
       return { ok: false, status: "not_found" as const };
     }
-    if (deal.status === "new" || (deal.verdict && deal.verdict !== null)) {
+    // Allow retries on `error` and stale `processing` deals. Skip only when
+    // the deal is already complete (status='new' AND verdict populated) and
+    // the caller didn't explicitly ask for a retry via ?retry=1.
+    const isRetry = req.query?.retry === "1";
+    const alreadyDone = deal.status === "new" && deal.verdict != null;
+    if (alreadyDone && !isRetry) {
       console.log(`[deal-process] Deal ${dealId} already processed; skipping.`);
       return { ok: true, status: "already_processed" as const };
     }
+    // Mark as processing so the UI can show a spinner during retry.
+    await updateDeal(dealId, { status: "processing", error_message: null });
 
     const rawText = deal.raw_text ?? "";
     if (!rawText.trim()) {
@@ -71,6 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await updateDeal(dealId, {
         status: "error",
         headline: "Claude extraction failed — open this deal to see raw text and retry.",
+        error_message: msg.slice(0, 2000),
       });
       return { ok: false, status: "error" as const, reason: msg };
     }
@@ -104,6 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       memo_markdown: parsed.memo_markdown ?? null,
       computed_metrics: parsed.computed ?? null,
       status: "new",
+      error_message: null,
     });
 
     console.log(`[deal-process] Completed ${dealId}`);
@@ -112,7 +125,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[deal-process] Unexpected error for ${dealId}:`, err);
     try {
-      await updateDeal(dealId, { status: "error" });
+      await updateDeal(dealId, {
+        status: "error",
+        headline: "Unexpected error during deal processing — open to retry.",
+        error_message: msg.slice(0, 2000),
+      });
     } catch {
       /* ignore */
     }

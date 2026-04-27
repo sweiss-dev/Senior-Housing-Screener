@@ -44,6 +44,7 @@ export type Deal = {
   computed_metrics: unknown | null;
   raw_text: string | null;
   status: string;
+  error_message?: string | null;
 };
 
 export type DealFile = {
@@ -165,9 +166,12 @@ export async function ensureSchema(): Promise<void> {
       memo_markdown text,
       computed_metrics jsonb,
       raw_text      text,
-      status        text DEFAULT 'new'
+      status        text DEFAULT 'new',
+      error_message text
     )
   `);
+  // Backfill column on existing tables (idempotent).
+  await query(`ALTER TABLE deals ADD COLUMN IF NOT EXISTS error_message text`);
   await query(`
     CREATE TABLE IF NOT EXISTS deal_files (
       id         text PRIMARY KEY,
@@ -214,14 +218,14 @@ export async function insertDeal(
       ask_amount, sponsor_basis, purchase_price, purpose,
       noi_t12, noi_y1, noi_y2, noi_stab, occupancy,
       verdict, verdict_label, headline, memo_markdown,
-      computed_metrics, raw_text, status
+      computed_metrics, raw_text, status, error_message
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8,
       $9, $10, $11, $12,
       $13, $14, $15, $16,
       $17, $18, $19, $20, $21,
       $22, $23, $24, $25,
-      $26, $27, $28
+      $26, $27, $28, $29
     )
     RETURNING *
     `,
@@ -254,6 +258,7 @@ export async function insertDeal(
       deal.computed_metrics ? JSON.stringify(deal.computed_metrics) : null,
       deal.raw_text ?? null,
       deal.status ?? "new",
+      deal.error_message ?? null,
     ],
   );
   return result.rows[0];
@@ -275,7 +280,7 @@ export async function listDeals(): Promise<Deal[]> {
   }
   const result = await query<Deal>(`
     SELECT id, property_name, city, state, verdict, verdict_label, headline,
-           status, created_at, ask_amount, units
+           status, created_at, ask_amount, units, error_message
     FROM deals ORDER BY created_at DESC
   `);
   return result.rows;
@@ -327,8 +332,9 @@ export async function updateDeal(id: string, patch: Partial<Deal>): Promise<void
       memo_markdown    = COALESCE($23, memo_markdown),
       computed_metrics = COALESCE($24::jsonb, computed_metrics),
       raw_text         = COALESCE($25, raw_text),
-      status           = COALESCE($26, status)
-    WHERE id = $27
+      status           = COALESCE($26, status),
+      error_message    = COALESCE($27, error_message)
+    WHERE id = $28
     `,
     [
       patch.property_name ?? null,
@@ -357,6 +363,7 @@ export async function updateDeal(id: string, patch: Partial<Deal>): Promise<void
       patch.computed_metrics ? JSON.stringify(patch.computed_metrics) : null,
       patch.raw_text ?? null,
       patch.status ?? null,
+      patch.error_message ?? null,
       id,
     ],
   );
