@@ -299,6 +299,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error("[deal-intake]", err);
-    return res.status(500).json({ error: "Deal intake failed. See server logs." });
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? (err.stack ?? "") : "";
+    return res.status(500).json({
+      error: "Deal intake failed. See server logs.",
+      detail: message,
+      stack: stack.split("\n").slice(0, 6).join("\n"),
+    });
   }
 }
