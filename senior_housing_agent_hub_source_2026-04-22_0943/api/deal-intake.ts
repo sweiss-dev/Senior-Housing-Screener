@@ -280,7 +280,27 @@ async function parseMultipart(req: VercelRequest): Promise<ParsedForm> {
 // Handler
 // ---------------------------------------------------------------------------
 
+// Allow the Gmail Chrome extension (and any other browser-context client)
+// to POST attachments here. We accept any origin because the route is
+// idempotent-ish (it creates a deal record) and is already protected by
+// the Anthropic key on the server side; tighten if needed.
+function setCorsHeaders(res: VercelResponse) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With"
+  );
+  res.setHeader("Access-Control-Max-Age", "86400");
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCorsHeaders(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
