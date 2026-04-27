@@ -336,31 +336,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Extract text from uploaded files + upload to Blob
     // ------------------------------------------------------------------
     const dealId = nanoid(12);
-    const extractedTexts: string[] = [];
-    const fileRecords: Array<{ filename: string; blobUrl: string | null; kind: string }> = [];
 
-    for (const file of uploadedFiles) {
-      const lower = file.filename.toLowerCase();
-      let text = "";
-      let kind = "other";
+    // Process all files in parallel: extract text + upload to Blob concurrently.
+    // Each file does its PDF/XLSX parse and Blob upload at the same time as
+    // every other file, instead of waiting on one before starting the next.
+    const t0 = Date.now();
+    const perFile = await Promise.all(
+      uploadedFiles.map(async (file) => {
+        const lower = file.filename.toLowerCase();
+        let text = "";
+        let kind = "other";
 
-      try {
-        if (lower.endsWith(".pdf") || file.mimetype.includes("pdf")) {
-          text = await extractTextFromPdf(file.buffer);
-          kind = "pdf";
-        } else if (/\.(xlsx|xls|xlsm|xlsb|csv)$/i.test(lower) || file.mimetype.includes("spreadsheet") || file.mimetype.includes("excel") || file.mimetype.includes("csv")) {
-          text = extractTextFromXlsx(file.buffer);
-          kind = "xlsx";
-        }
-        if (text) extractedTexts.push(`=== File: ${file.filename} ===\n${text}`);
-      } catch (e) {
-        console.warn(`[deal-intake] Could not parse ${file.filename}:`, e);
-      }
+        const parsePromise = (async () => {
+          try {
+            if (lower.endsWith(".pdf") || file.mimetype.includes("pdf")) {
+              text = await extractTextFromPdf(file.buffer);
+              kind = "pdf";
+            } else if (/\.(xlsx|xls|xlsm|xlsb|csv)$/i.test(lower) || file.mimetype.includes("spreadsheet") || file.mimetype.includes("excel") || file.mimetype.includes("csv")) {
+              text = extractTextFromXlsx(file.buffer);
+              kind = "xlsx";
+            }
+          } catch (e) {
+            console.warn(`[deal-intake] Could not parse ${file.filename}:`, e);
+          }
+        })();
 
-      // Upload to Vercel Blob
-      const blobUrl = await uploadToBlob(file.buffer, file.filename, file.mimetype);
-      fileRecords.push({ filename: file.filename, blobUrl, kind });
-    }
+        const blobPromise = uploadToBlob(file.buffer, file.filename, file.mimetype)
+          .catch((e) => {
+            console.warn(`[deal-intake] Blob upload failed for ${file.filename}:`, e);
+            return null;
+          });
+
+        const [, blobUrl] = await Promise.all([parsePromise, blobPromise]);
+        return {
+          extractedText: text ? `=== File: ${file.filename} ===\n${text}` : "",
+          fileRecord: { filename: file.filename, blobUrl, kind },
+        };
+      })
+    );
+    console.log(`[deal-intake] Processed ${uploadedFiles.length} file(s) in ${Date.now() - t0}ms`);
+
+    const extractedTexts = perFile.map((p) => p.extractedText).filter(Boolean);
+    const fileRecords = perFile.map((p) => p.fileRecord);
 
     // ------------------------------------------------------------------
     // 2. Build raw_text
@@ -377,12 +394,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ------------------------------------------------------------------
     // 3. Call Claude
     // ------------------------------------------------------------------
+    // Cap the prompt to keep model latency bounded. 200k chars ≈ 50k tokens,
+    // which is plenty for a CIM and keeps Claude well under typical timeouts.
+    const MAX_PROMPT_CHARS = 200_000;
+    const promptText =
+      rawText.length > MAX_PROMPT_CHARS
+        ? rawText.slice(0, MAX_PROMPT_CHARS) + "\n\n[...truncated for length...]"
+        : rawText;
+
+    const tClaude = Date.now();
     const msg = await client.messages.create({
       model: "claude-sonnet-4-5-20250929",
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(rawText) }],
+      messages: [{ role: "user", content: buildUserPrompt(promptText) }],
     });
+    console.log(`[deal-intake] Claude responded in ${Date.now() - tClaude}ms`);
 
     const rawJson = msg.content
       .filter((b) => b.type === "text")
