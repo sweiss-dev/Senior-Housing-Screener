@@ -342,14 +342,20 @@ async function getNearbyBlockGroups(lat, lon, maxMiles) {
     .sort((a, b) => a.distanceMiles - b.distanceMiles);
 }
 
+function censusApiKey() {
+  return process.env.CENSUS_API_KEY || process.env.CENSUS_KEY || "";
+}
+
 async function getBlockGroupRecords(year, blockGroups, prior = false) {
   const records = [];
   const vars = prior ? PRIOR_VARIABLES : ACS_VARIABLES;
+  const key = censusApiKey();
   for (const bg of blockGroups) {
     const url = new URL(`https://api.census.gov/data/${year}/acs/acs5`);
     url.searchParams.set("get", vars.join(","));
     url.searchParams.set("for", `block group:${bg.blockGroup}`);
     url.searchParams.set("in", `state:${bg.state} county:${bg.county} tract:${bg.tract}`);
+    if (key) url.searchParams.set("key", key);
     try {
       const rows = await fetchJson(url.toString());
       if (Array.isArray(rows) && rows.length > 1) records.push(parseAcsRow(rows[0], rows[1]));
@@ -369,6 +375,8 @@ async function getSummaryRecord(year, stateFips, countyFips) {
   } else {
     url.searchParams.set("for", `state:${stateFips}`);
   }
+  const key = censusApiKey();
+  if (key) url.searchParams.set("key", key);
   const rows = await fetchJson(url.toString());
   return Array.isArray(rows) && rows.length > 1 ? parseAcsRow(rows[0], rows[1]) : null;
 }
