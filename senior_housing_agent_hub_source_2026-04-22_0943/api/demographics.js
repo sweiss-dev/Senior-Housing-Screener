@@ -167,19 +167,28 @@ export default async function handler(req, res) {
     const blockGroups = await getNearbyBlockGroups(lat, lon, 5.25);
     const rows = [];
 
-    // Parallelize the 6 ACS calls (current + prior x 3 radii) — they're
-    // independent and Census endpoints are slow, so this cuts wall-time
-    // by ~3x.
-    const radiusResults = await Promise.all(
-      RADIUS_MILES.map(async (radius) => {
-        const selected = blockGroups.filter((bg) => bg.distanceMiles <= radius);
-        const [currentRecords, priorRecords] = await Promise.all([
-          getBlockGroupRecords(CURRENT_ACS_YEAR, selected),
-          getBlockGroupRecords(PRIOR_ACS_YEAR, selected, true),
-        ]);
-        return { radius, selected, currentRecords, priorRecords };
-      })
-    );
+    // Fetch ACS data for the full 5-mile set once (current + prior in
+    // parallel), then filter in-memory per radius. Previously we made
+    // 6 separate passes (3 radii x 2 years) which re-fetched the same
+    // inner block groups multiple times — enough to time out on Hobby.
+    const [allCurrentRecords, allPriorRecords] = await Promise.all([
+      getBlockGroupRecords(CURRENT_ACS_YEAR, blockGroups),
+      getBlockGroupRecords(PRIOR_ACS_YEAR, blockGroups, true),
+    ]);
+    const distanceByGeoid = new Map(blockGroups.map((bg) => [bg.geoid, bg.distanceMiles]));
+    function geoidFor(record) {
+      return `${record.state}${record.county}${record.tract}${record["block group"]}`;
+    }
+    const radiusResults = RADIUS_MILES.map((radius) => {
+      const selected = blockGroups.filter((bg) => bg.distanceMiles <= radius);
+      const inRadius = (record) => {
+        const d = distanceByGeoid.get(geoidFor(record));
+        return typeof d === "number" && d <= radius;
+      };
+      const currentRecords = allCurrentRecords.filter(inRadius);
+      const priorRecords = allPriorRecords.filter(inRadius);
+      return { radius, selected, currentRecords, priorRecords };
+    });
     for (const { radius, selected, currentRecords, priorRecords } of radiusResults) {
       const current = aggregateRecords(currentRecords);
       const prior = aggregateRecords(priorRecords);
@@ -347,22 +356,66 @@ function censusApiKey() {
 }
 
 async function getBlockGroupRecords(year, blockGroups, prior = false) {
-  const records = [];
+  // Batch by (state, county, tract): the ACS API lets us pull every block
+  // group in a tract in a single request via `block group:*`, which cuts
+  // call count from ~N (one per block group) down to ~T (one per tract).
+  // Combined with bounded parallelism this fits comfortably in the 60s
+  // Hobby-plan budget.
   const vars = prior ? PRIOR_VARIABLES : ACS_VARIABLES;
   const key = censusApiKey();
+
+  const wantedByTract = new Map();
   for (const bg of blockGroups) {
+    const tractKey = `${bg.state}|${bg.county}|${bg.tract}`;
+    if (!wantedByTract.has(tractKey)) {
+      wantedByTract.set(tractKey, {
+        state: bg.state,
+        county: bg.county,
+        tract: bg.tract,
+        wanted: new Set(),
+      });
+    }
+    wantedByTract.get(tractKey).wanted.add(String(bg.blockGroup));
+  }
+
+  const tractEntries = Array.from(wantedByTract.values());
+  const CONCURRENCY = 6;
+  const records = [];
+
+  async function fetchTract(entry) {
     const url = new URL(`https://api.census.gov/data/${year}/acs/acs5`);
     url.searchParams.set("get", vars.join(","));
-    url.searchParams.set("for", `block group:${bg.blockGroup}`);
-    url.searchParams.set("in", `state:${bg.state} county:${bg.county} tract:${bg.tract}`);
+    url.searchParams.set("for", "block group:*");
+    url.searchParams.set("in", `state:${entry.state} county:${entry.county} tract:${entry.tract}`);
     if (key) url.searchParams.set("key", key);
     try {
       const rows = await fetchJson(url.toString());
-      if (Array.isArray(rows) && rows.length > 1) records.push(parseAcsRow(rows[0], rows[1]));
+      if (!Array.isArray(rows) || rows.length < 2) return [];
+      const headers = rows[0];
+      const bgIdx = headers.indexOf("block group");
+      const parsed = [];
+      for (let i = 1; i < rows.length; i += 1) {
+        const row = rows[i];
+        if (bgIdx >= 0 && !entry.wanted.has(String(row[bgIdx]))) continue;
+        parsed.push(parseAcsRow(headers, row));
+      }
+      return parsed;
     } catch (error) {
       if (!prior) throw error;
+      return [];
     }
   }
+
+  // Bounded concurrency worker pool.
+  let cursor = 0;
+  async function worker() {
+    while (cursor < tractEntries.length) {
+      const idx = cursor++;
+      const out = await fetchTract(tractEntries[idx]);
+      for (const rec of out) records.push(rec);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tractEntries.length) }, worker));
   return records;
 }
 
