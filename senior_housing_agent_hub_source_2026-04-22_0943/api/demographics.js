@@ -230,15 +230,68 @@ export default async function handler(req, res) {
 };
 
 async function geocodeAddress(address) {
-  const url = new URL("https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress");
-  url.searchParams.set("address", address);
-  url.searchParams.set("benchmark", "Public_AR_Current");
-  url.searchParams.set("vintage", "Current_Current");
-  url.searchParams.set("format", "json");
-  const data = await fetchJson(url.toString());
-  const match = data && data.result && data.result.addressMatches && data.result.addressMatches[0];
-  if (!match) throw httpError(404, "No Census geocode match found for that address.");
-  return match;
+  // 1) Try the Census one-line geocoder first — when it works, it returns
+  //    the state/county FIPS we need directly.
+  try {
+    const url = new URL("https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress");
+    url.searchParams.set("address", address);
+    url.searchParams.set("benchmark", "Public_AR_Current");
+    url.searchParams.set("vintage", "Current_Current");
+    url.searchParams.set("format", "json");
+    const data = await fetchJson(url.toString());
+    const match = data && data.result && data.result.addressMatches && data.result.addressMatches[0];
+    if (match) return match;
+  } catch (_err) {
+    // fall through to Google fallback
+  }
+
+  // 2) Fallback: Google Maps geocode -> lat/lon -> Census coordinate lookup
+  //    for state + county FIPS. Census misses a lot of valid addresses; Google
+  //    is much more forgiving with formatting, units, and newer addresses.
+  const apiKey = process.env.API_KEY_2 || process.env.GOOGLE_MAPS_API_KEY || "";
+  if (!apiKey) {
+    throw httpError(
+      404,
+      "No Census geocode match found for that address, and no Google Maps API key is configured for fallback (set API_KEY_2 or GOOGLE_MAPS_API_KEY)."
+    );
+  }
+
+  const googleUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  googleUrl.searchParams.set("address", address);
+  googleUrl.searchParams.set("key", apiKey);
+  googleUrl.searchParams.set("region", "us");
+  const gData = await fetchJson(googleUrl.toString());
+  if (gData.status !== "OK" || !gData.results || !gData.results.length) {
+    throw httpError(
+      404,
+      `Could not geocode that address (Census: no match; Google: ${gData.status || "no result"}). Try including city, state, and ZIP.`
+    );
+  }
+  const top = gData.results[0];
+  const lat = top.geometry && top.geometry.location && top.geometry.location.lat;
+  const lon = top.geometry && top.geometry.location && top.geometry.location.lng;
+  if (typeof lat !== "number" || typeof lon !== "number") {
+    throw httpError(404, "Google geocode returned no usable coordinates.");
+  }
+
+  // 3) Reverse-look up the Census state + county for those coordinates.
+  const censusUrl = new URL("https://geocoding.geo.census.gov/geocoder/geographies/coordinates");
+  censusUrl.searchParams.set("x", String(lon));
+  censusUrl.searchParams.set("y", String(lat));
+  censusUrl.searchParams.set("benchmark", "Public_AR_Current");
+  censusUrl.searchParams.set("vintage", "Current_Current");
+  censusUrl.searchParams.set("format", "json");
+  const cData = await fetchJson(censusUrl.toString());
+  const geographies = cData && cData.result && cData.result.geographies;
+  if (!geographies || !geographies.States || !geographies.Counties) {
+    throw httpError(404, "Could not resolve Census geography for that location.");
+  }
+
+  return {
+    matchedAddress: top.formatted_address,
+    coordinates: { x: lon, y: lat },
+    geographies,
+  };
 }
 
 async function getNearbyBlockGroups(lat, lon, maxMiles) {
