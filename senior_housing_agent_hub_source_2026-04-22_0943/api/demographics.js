@@ -260,11 +260,23 @@ async function geocodeAddress(address) {
   googleUrl.searchParams.set("address", address);
   googleUrl.searchParams.set("key", apiKey);
   googleUrl.searchParams.set("region", "us");
-  const gData = await fetchJson(googleUrl.toString());
+  const gResp = await fetch(googleUrl.toString());
+  const gText = await gResp.text();
+  let gData;
+  try {
+    gData = JSON.parse(gText);
+  } catch (_e) {
+    const snippet = gText.slice(0, 200).replace(/\s+/g, " ");
+    throw httpError(
+      502,
+      `Google Maps Geocoding returned non-JSON (status ${gResp.status}). Likely an unenabled API or invalid key. Response: ${snippet}`
+    );
+  }
   if (gData.status !== "OK" || !gData.results || !gData.results.length) {
+    const detail = gData.error_message ? ` — ${gData.error_message}` : "";
     throw httpError(
       404,
-      `Could not geocode that address (Census: no match; Google: ${gData.status || "no result"}). Try including city, state, and ZIP.`
+      `Could not geocode that address (Census: no match; Google: ${gData.status || "no result"}${detail}). Try including city, state, and ZIP.`
     );
   }
   const top = gData.results[0];
@@ -487,8 +499,17 @@ function haversineMiles(lat1, lon1, lat2, lon2) {
 
 async function fetchJson(url) {
   const response = await fetch(url);
-  if (!response.ok) throw httpError(response.status, `External data request failed: ${response.statusText}`);
-  return response.json();
+  const text = await response.text();
+  if (!response.ok) {
+    const snippet = text ? text.slice(0, 200).replace(/\s+/g, " ") : "";
+    throw httpError(response.status, `External data request failed (${response.status}): ${snippet || response.statusText}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (_e) {
+    const snippet = text.slice(0, 200).replace(/\s+/g, " ");
+    throw httpError(502, `External data request returned non-JSON: ${snippet}`);
+  }
 }
 
 function httpError(status, message) {
